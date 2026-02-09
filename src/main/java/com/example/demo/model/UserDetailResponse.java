@@ -17,7 +17,6 @@ import java.util.Set;
 public class UserDetailResponse {
     private String id;
     private String name;
-    private String username;
     private String email;
     private String imageUrl;
     private Set<String> roles = new HashSet<>();

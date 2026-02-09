@@ -21,7 +21,6 @@ public class UserFollowService {
     public void followUser(String followerId, String followingId) {
         // 1. Validate: Không tự follow chính mình
         if (followerId.equals(followingId)) {
-            // Thay thế IllegalArgumentException
             throw new AppException(HttpStatus.BAD_REQUEST, "FOLLOW_SELF_ERR", "Cannot follow yourself");
         }
 

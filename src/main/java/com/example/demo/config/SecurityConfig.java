@@ -54,13 +54,10 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler((request, response, authentication) -> {
-                            // 1. Lấy thông tin user từ Google
                             DefaultOAuth2User oAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
 
-                            // 2. Gọi AuthService để xử lý logic nghiệp vụ
                             String targetUrl = authService.processOAuthPostLogin(oAuth2User);
 
-                            // 3. Điều hướng về Frontend
                             response.sendRedirect(targetUrl);
                         })
                 );

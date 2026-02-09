@@ -12,12 +12,6 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, String> {
-    Boolean existsByUsername(String username);
-
-
-    Optional<UserEntity> findByUsername(String username);
-
-    Optional<UserEntity> findByUsernameOrEmail(String username, String email);
 
     @Query("SELECT u FROM UserEntity u WHERE u.id <> :currentUserId " +
             "AND u.id NOT IN (SELECT f.following.id FROM UserFollow f WHERE f.follower.id = :currentUserId)")

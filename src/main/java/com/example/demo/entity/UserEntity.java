@@ -17,9 +17,7 @@ public class UserEntity extends BaseEntity {
     private String password;
     @Enumerated(EnumType.STRING)
     private Provider provider;
-    private Integer age;
     private String providerUserId;
-    private String username;
     private String email;
     private String imageUrl;
     private String imageHash;

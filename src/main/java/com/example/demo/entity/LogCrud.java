@@ -18,7 +18,6 @@ public class LogCrud {
     private String id;
     private String action;
     private String userId;
-    private String userName;
     private LocalDateTime time;
     @Column(columnDefinition = "jsonb")
     private String oldData;

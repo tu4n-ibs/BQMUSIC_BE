@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserFollowController {
 
     private final UserFollowService userFollowService;
-    private final UserRepository userRepository; // Cần để map từ Username (trong Token) ra ID
+    private final UserRepository userRepository;
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

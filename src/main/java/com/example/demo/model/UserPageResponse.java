@@ -15,7 +15,6 @@ import java.util.Set;
 @NoArgsConstructor
 public class UserPageResponse {
     private String name;
-    private String username;
     private String email;
     private String imageUrl;
     private Set<String> roles = new HashSet<>();

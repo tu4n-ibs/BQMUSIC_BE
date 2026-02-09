@@ -27,7 +27,7 @@ public class AuthController {
     private final AuthService authService;
     @PostMapping
     public LoginResponse login(@RequestBody LoginRequest loginRequest) throws JOSEException, ParseException {
-        return authService.login(loginRequest.username(),loginRequest.password());
+        return authService.login(loginRequest.email(),loginRequest.password());
     }
     @PostMapping("/logout")
     public String logout(@AuthenticationPrincipal Jwt jwt, @RequestBody RefreshTokenRequest request) throws ParseException, JOSEException {
@@ -41,18 +41,5 @@ public class AuthController {
     @PreAuthorize("hasRole('ADMIN')")
     public Page<LogCrud> history(@ParameterObject Pageable pageable){
         return authService.history(pageable);
-    }
-    @GetMapping("/me")
-    public ResponseEntity<?> me(Authentication authentication) {
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-
-        return ResponseEntity.ok(
-                Map.of(
-                        "username", jwt.getSubject(),
-                        "email", jwt.getClaim("email"),
-                        "roles", jwt.getClaim("roles"),
-                        "expiresAt", jwt.getExpiresAt()
-                )
-        );
     }
 }

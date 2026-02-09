@@ -56,14 +56,6 @@ public class UserService {
             );
         }
 
-        if (userRepository.existsById(createRequest.getUsername())) {
-            throw new AppException(
-                    HttpStatus.CONFLICT,
-                    "USER_EXIST_001",
-                    "Username already exists"
-            );
-        }
-
         if (userRepository.findByEmail(createRequest.getEmail()).isPresent()) {
             throw new AppException(
                     HttpStatus.CONFLICT,
@@ -74,7 +66,6 @@ public class UserService {
 
         UserEntity userEntity = new UserEntity();
         userEntity.setProvider(Provider.LOCAL);
-        userEntity.setUsername(createRequest.getUsername());
         userEntity.setEmail(createRequest.getEmail());
         userEntity.setName(createRequest.getName());
 
@@ -237,7 +228,6 @@ public class UserService {
         return userEntityPage.map(userEntity -> {
             UserPageResponse response = new UserPageResponse();
             response.setName(userEntity.getName());
-            response.setUsername(userEntity.getUsername());
             response.setEmail(userEntity.getEmail());
             response.setImageUrl(userEntity.getImageUrl());
 
@@ -266,7 +256,6 @@ public class UserService {
         return new UserDetailResponse(
                 userEntity.getId(),
                 userEntity.getName(),
-                userEntity.getUsername(),
                 userEntity.getEmail(),
                 userEntity.getImageUrl(),
                 roles
@@ -278,7 +267,6 @@ public class UserService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
 
         existingUser.setName(request.getName());
-        existingUser.setUsername(request.getUsername());
         existingUser.setEmail(request.getEmail());
         existingUser.setIsActive(request.getIsActive());
 

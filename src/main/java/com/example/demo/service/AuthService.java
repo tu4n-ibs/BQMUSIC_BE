@@ -58,7 +58,6 @@ public class AuthService {
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issuer("DANG QUAN BAO")
-                .claim("username", user.getUsername())
                 .claim("roles", roles)
                 .expirationTime(new Date(System.currentTimeMillis() + 600000))
                 .issueTime(new Date())
@@ -87,13 +86,13 @@ public class AuthService {
 
         Set<RoleEntity> roles = userEntity.getRoles();
         Set<String> roleSet = roles.stream().map(RoleEntity::getName).collect(Collectors.toSet());
-        return new LoginResponse(token, refreshToken, roleSet, userEntity.getEmail());
+        return new LoginResponse(token, refreshToken, roleSet, userEntity.getId(),userEntity.getEmail());
     }
 
-    public LoginResponse login(String username, String password) throws JOSEException, ParseException {
+    public LoginResponse login(String email, String password) throws JOSEException, ParseException {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
-        UserEntity userEntity = userRepository.findByUsernameOrEmail(username,username)
+        UserEntity userEntity = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "AUTH_NF_001", "User not found"));
 
         if (!passwordEncoder.matches(password, userEntity.getPassword())) {
@@ -168,7 +167,6 @@ public class AuthService {
                         newUser.setName(name);
                         newUser.setImageUrl(picture);
                         newUser.setProvider(Provider.GOOGLE);
-                        newUser.setUsername(email);
                         return userRepository.save(newUser);
                     });
 
