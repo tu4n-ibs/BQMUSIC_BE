@@ -2,7 +2,7 @@ package com.example.demo.controller;
 import com.example.demo.entity.RoleEntity;
 import com.example.demo.service.RoleService;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;

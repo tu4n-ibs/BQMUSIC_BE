@@ -37,7 +37,6 @@ public class UserFollowController {
 
     @DeleteMapping("/{targetId}/unfollow")
     public ResponseEntity<String> unfollowUser(@PathVariable String targetId) {
-        // Lấy ID thật từ Token
         String currentUserId = getCurrentUserId();
 
         userFollowService.unfollowUser(currentUserId, targetId);

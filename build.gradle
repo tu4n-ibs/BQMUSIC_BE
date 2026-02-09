@@ -22,11 +22,16 @@ dependencies {
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation "org.postgresql:postgresql:42.7.7"
-    implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-    // Lombok
+    implementation('com.cloudinary:cloudinary-http44:1.39.0') {
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
+
+    // 2. Tự tay thêm bản httpclient mới nhất (đã vá lỗi) vào
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'    // Lombok
     compileOnly "org.projectlombok:lombok:1.18.38"
     annotationProcessor "org.projectlombok:lombok:1.18.38"
     implementation 'commons-codec:commons-codec:1.16.0'

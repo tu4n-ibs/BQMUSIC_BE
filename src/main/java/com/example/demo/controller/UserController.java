@@ -4,7 +4,7 @@ import com.example.demo.model.*;
 import com.example.demo.model.user.CreateRequest;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

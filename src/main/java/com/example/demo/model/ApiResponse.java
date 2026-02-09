@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL) // Bỏ qua các field null khi trả về JSON
 public class ApiResponse<T> {
-
-    private boolean success;
+    @Builder.Default
+    private boolean success = true;
     private int statusCode;
     private String message;
     private T data;
