@@ -1,8 +1,8 @@
-package com.example.demo.service;
+package com.example.demo.service.content_service;
 
 import com.example.demo.common.AppException;
 import com.example.demo.entity.GenreEntity;
-import com.example.demo.model.GenreModel;
+import com.example.demo.model.content_dto.GenreModel;
 import com.example.demo.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

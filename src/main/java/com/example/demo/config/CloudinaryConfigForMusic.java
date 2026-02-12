@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class CloudinaryConfig {
+public class CloudinaryConfigForMusic {
 
     @Value("${cloudinary.cloud-name}")
     private String cloudName;
@@ -20,7 +20,7 @@ public class CloudinaryConfig {
     @Value("${cloudinary.api-secret}")
     private String apiSecret;
 
-    @Bean
+    @Bean(name = "cloudinaryMusic")
     public Cloudinary cloudinary() {
         Map<String, String> config = new HashMap<>();
         config.put("cloud_name", cloudName);

@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.model.*;
 import com.example.demo.model.user.CreateRequest;
+import com.example.demo.model.user.UserDetailResponse;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -44,19 +45,7 @@ public class UserController {
         return userService.findAll(pageable);
     }
 
-    @GetMapping("{email}")
-    @PreAuthorize("hasRole('ADMIN') or #email == authentication.name")
-    public UserDetailResponse findByEmail(@PathVariable String email) {
-        return userService.findByEmail(email);
-    }
 
-    @PutMapping("{email}")
-    @PreAuthorize("hasRole('ADMIN') or #email == authentication.name")
-    public void update(@PathVariable String email,
-                       @RequestPart("user") UserUpdateRequest request,
-                       @RequestPart(value = "image", required = false) MultipartFile image) {
-        userService.update(email, request, image);
-    }
     @GetMapping("/suggestions")
     public ResponseEntity<List<UserSuggestResponse>> getSuggestions() {
         String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder
@@ -109,5 +98,22 @@ public class UserController {
                 .statusCode(HttpStatus.OK.value())
                 .message("Password reset successfully")
                 .build();
+    }
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/update-name")
+    public ApiResponse<Void> updateName(@RequestParam String name){
+        userService.UpdateName(name);
+        return ApiResponse.success(null, "Name updated successfully");
+    }
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("update-image")
+    public ApiResponse<Void> updateImage(@RequestParam MultipartFile file){
+        userService.UpdateImage(file);
+        return ApiResponse.success(null, "image updated successfully");
+    }
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("userId/{id}")
+    public ApiResponse<UserDetailResponse> findById(@PathVariable String id) {
+        return ApiResponse.success(userService.getUserDetail(id),"success");
     }
 }

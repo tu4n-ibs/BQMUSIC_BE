@@ -1,8 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.ApiResponse;
-import com.example.demo.model.GenreModel;
-import com.example.demo.service.GenreService;
+import com.example.demo.model.content_dto.GenreModel;
+import com.example.demo.service.content_service.GenreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,6 @@ public class GenreController {
                 .build();
     }
 
-    // GET ALL
     @GetMapping
     public ApiResponse<List<GenreModel>> getAll() {
         return ApiResponse.<List<GenreModel>>builder()

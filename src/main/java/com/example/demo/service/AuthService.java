@@ -23,6 +23,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -37,8 +38,8 @@ public class AuthService {
     private final UserRepository userRepository;
 
     private final InvalidatedTokenRepository invalidatedTokenRepository;
-
-    private final String secret = "h2jXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/gk";
+    @Value("${token.secret.key}")
+    private String secret;
 
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -58,8 +59,9 @@ public class AuthService {
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issuer("DANG QUAN BAO")
+                .claim("userId", user.getId())
                 .claim("roles", roles)
-                .expirationTime(new Date(System.currentTimeMillis() + 600000))
+                .expirationTime(new Date(System.currentTimeMillis() + 6000000))
                 .issueTime(new Date())
                 .jwtID(UUID.randomUUID().toString())
                 .build();

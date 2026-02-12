@@ -1,8 +1,11 @@
 package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
+import com.example.demo.model.enum_object.ContextType;
+import com.example.demo.model.enum_object.PostType;
+import com.example.demo.model.enum_object.TargetType;
+import com.example.demo.model.enum_object.Visibility;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,17 +16,28 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "post")
 public class PostEntity extends BaseEntity {
     @ManyToOne
-    private UserEntity userId;
+    private UserEntity userEntity;
+    @Enumerated(EnumType.STRING)
+    private ContextType contextType;
 
-    private int likes;
+    private String contextTypeId;
+
+    @Enumerated(EnumType.STRING)
+    private PostType postType;
+
+    @ManyToOne
+    private PostEntity originalPost;
 
     private String content;
 
-    private String musicLink;
+    @Enumerated(EnumType.STRING)
+    private Visibility visibility;
 
-    private String imageUrl;
+    @Enumerated(EnumType.STRING)
+    private TargetType targetType;
 
-    private String imageHash;
+    private String targetId;
 }

@@ -1,12 +1,13 @@
 package com.example.demo.service;
 
 import com.example.demo.common.AppException;
-import com.example.demo.common.HashUtil;
+import com.example.demo.common.SecurityUtils;
 import com.example.demo.entity.RoleEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.*;
 import com.example.demo.model.enum_object.Provider;
 import com.example.demo.model.user.CreateRequest;
+import com.example.demo.model.user.UserDetailResponse;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -21,7 +22,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private static final String IMAGE_PATH = "C:/image-for-porject/";
     private final StringRedisTemplate redisTemplate;
     private final EmailService emailService;
+    private final CloudinaryServiceForImage cloudinaryService;
 
     @Transactional
     public void register(CreateRequest createRequest) {
@@ -45,6 +45,7 @@ public class UserService {
                     "Passwords do not match"
             );
         }
+
         String redisKey = "register_session:" + createRequest.getEmail();
         String status = (String) redisTemplate.opsForHash().get(redisKey, "status");
 
@@ -68,7 +69,7 @@ public class UserService {
         userEntity.setProvider(Provider.LOCAL);
         userEntity.setEmail(createRequest.getEmail());
         userEntity.setName(createRequest.getName());
-
+        userEntity.setIsActive(true);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
         userEntity.setPassword(encoder.encode(createRequest.getPassword()));
 
@@ -242,64 +243,6 @@ public class UserService {
         });
     }
 
-    public UserDetailResponse findByEmail(String email) {
-        UserEntity userEntity = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
-
-        // Kiểm tra tính toàn vẹn của ảnh
-        validateImageIntegrity(userEntity);
-
-        Set<String> roles = userEntity.getRoles().stream()
-                .map(RoleEntity::getName)
-                .collect(Collectors.toSet());
-
-        return new UserDetailResponse(
-                userEntity.getId(),
-                userEntity.getName(),
-                userEntity.getEmail(),
-                userEntity.getImageUrl(),
-                roles
-        );
-    }
-
-    public void update(String email, UserUpdateRequest request, MultipartFile newImage) {
-        UserEntity existingUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
-
-        existingUser.setName(request.getName());
-        existingUser.setEmail(request.getEmail());
-        existingUser.setIsActive(request.getIsActive());
-
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
-            existingUser.setPassword(encoder.encode(request.getPassword()));
-        }
-
-        if (newImage != null && !newImage.isEmpty()) {
-            // Trường hợp 1: Có upload ảnh mới -> Lưu ảnh mới
-            try {
-                String fileName = System.currentTimeMillis() + "_" + newImage.getOriginalFilename();
-                File dir = new File(IMAGE_PATH);
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-                File dest = new File(dir, fileName);
-
-                newImage.transferTo(dest);
-                String hash = HashUtil.sha256Hex(dest);
-
-                existingUser.setImageUrl("/public/" + fileName);
-                existingUser.setImageHash(hash);
-            } catch (Exception e) {
-                throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_UPLOAD_ERR", "Error saving new image: " + e.getMessage());
-            }
-        } else {
-            // Trường hợp 2: Không upload ảnh mới -> Kiểm tra ảnh cũ còn nguyên vẹn không
-            validateImageIntegrity(existingUser);
-        }
-
-        userRepository.save(existingUser);
-    }
 
     public List<UserSuggestResponse> getSuggestions(String email) {
         UserEntity currentUser = userRepository.findByEmail(email)
@@ -320,31 +263,26 @@ public class UserService {
     }
 
     public void delete(String id) {
-        if (!userRepository.existsById(id)) {
-            throw new AppException(HttpStatus.NOT_FOUND, "USER_NF_002", "User ID to delete not found");
-        }
-        userRepository.deleteById(id);
+        UserEntity userEntity = userRepository.findById(id)
+                .orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        userEntity.setIsActive(false);
+        userRepository.save(userEntity);
     }
 
-    // --- HELPER METHOD ---
-    private void validateImageIntegrity(UserEntity user) {
-        if (user.getImageUrl() != null && user.getImageHash() != null) {
-            String fileName = user.getImageUrl().replace("/public/", "");
-            File file = new File(IMAGE_PATH + fileName);
-
-            if (file.exists()) {
-                try {
-                    String currentHash = HashUtil.sha256Hex(file);
-                    if (!currentHash.equals(user.getImageHash())) {
-                        throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_INTEGRITY_ERR", "Image integrity check failed (Hash mismatch)");
-                    }
-                } catch (Exception e) {
-                    if (e instanceof AppException) throw (AppException) e;
-                    throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_HASH_ERR", "Error calculating image hash: " + e.getMessage());
-                }
-            } else {
-                throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_NF_ERR", "Physical image file missing on server");
-            }
-        }
+    public void UpdateImage(MultipartFile file) {
+        String id = SecurityUtils.getCurrentUserId();
+        UserEntity userEntity = userRepository.findById(id).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        String urlImage = cloudinaryService.uploadFile(file);
+        userEntity.setImageUrl(urlImage);
+        userRepository.save(userEntity);
+    }
+    public void UpdateName(String name) {
+        UserEntity userEntity = userRepository.findById(SecurityUtils.getCurrentUserId()).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        userEntity.setName(name);
+        userRepository.save(userEntity);
+    }
+    public UserDetailResponse getUserDetail(String id) {
+        UserEntity user = userRepository.findById(id).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        return new UserDetailResponse(user.getId(),user.getName(), user.getImageUrl());
     }
 }

@@ -1,6 +1,5 @@
 package com.example.demo.model;
 
-import com.example.demo.entity.RoleEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

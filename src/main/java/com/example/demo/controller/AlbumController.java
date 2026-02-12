@@ -1,0 +1,42 @@
+package com.example.demo.controller;
+
+import com.example.demo.entity.AlbumEntity;
+import com.example.demo.model.ApiResponse;
+import com.example.demo.model.content_dto.AlbumCreateRequest;
+import com.example.demo.model.content_dto.AlbumSongDto;
+import com.example.demo.service.content_service.AlbumService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/album")
+public class AlbumController {
+    private final AlbumService albumService;
+
+    @PostMapping
+    public ApiResponse<?> newAlbum(@RequestBody AlbumCreateRequest albumCreateRequest) {
+        albumService.save(albumCreateRequest);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping
+    public ApiResponse<List<AlbumEntity>> getAlbums() {
+        return ApiResponse.success(albumService.findAll());
+    }
+
+    @PostMapping("/add-new-song")
+    public ApiResponse<?> addNewSong(@RequestBody AlbumSongDto albumSongDto) {
+        albumService.addSong(albumSongDto);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("update-image")
+    public ApiResponse<?> updateImage(@RequestParam MultipartFile file, @RequestParam String albumId) {
+        albumService.updateImageAlbum(file, albumId);
+        return ApiResponse.success(null);
+    }
+}

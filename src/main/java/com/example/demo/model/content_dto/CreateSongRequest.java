@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.content_dto;
 
 import lombok.*;
 
@@ -9,7 +9,6 @@ import lombok.*;
 @Setter
 public class CreateSongRequest {
     private String name;
-    private String userId;
     private String musicUrl;
     private String genreId;
 }

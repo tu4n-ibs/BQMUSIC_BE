@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.ApiResponse;
-import com.example.demo.model.CreateSongRequest;
-import com.example.demo.model.SongResponse;
-import com.example.demo.service.SongService;
+import com.example.demo.model.content_dto.CreateSongRequest;
+import com.example.demo.model.content_dto.SongResponse;
+import com.example.demo.service.content_service.SongService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,5 +32,10 @@ public class SongController {
         Page<SongResponse> result = songService.getAllSongs(pageable);
 
         return ApiResponse.success(result, "Lấy danh sách thành công");
+    }
+    @PutMapping("/update-image")
+    public ApiResponse<?> updateSongImage(@RequestParam String songId, @RequestParam(value = "file") MultipartFile musicFile) {
+        songService.updateImage(musicFile, songId);
+        return ApiResponse.success(null,"Success");
     }
 }

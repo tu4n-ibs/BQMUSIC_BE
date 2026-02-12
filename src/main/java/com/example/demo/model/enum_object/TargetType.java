@@ -1,0 +1,5 @@
+package com.example.demo.model.enum_object;
+
+public enum TargetType {
+    SONG,ALBUM
+}
