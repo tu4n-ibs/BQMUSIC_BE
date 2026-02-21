@@ -3,7 +3,6 @@ package com.example.demo.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.example.demo.common.AppException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,12 +22,12 @@ public class CloudinaryServiceForMusic {
         if (file.isEmpty()) {
             throw new AppException(HttpStatus.BAD_REQUEST,"FILE_001", "File is empty");
         }
-        Map params = ObjectUtils.asMap(
+        Map<?,?> params = ObjectUtils.asMap(
                 "resource_type", "auto",
                 "folder", "bqmusic_uploads"
         );
         try {
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+        Map<?,?> uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
 
         return uploadResult.get("secure_url").toString();
         }

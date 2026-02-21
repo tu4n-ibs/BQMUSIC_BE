@@ -22,12 +22,12 @@ public class CloudinaryServiceForImage {
             throw new AppException(HttpStatus.BAD_REQUEST,"FILE_001", "File is empty");
         }
 
-        Map params = ObjectUtils.asMap(
+        Map<?,?> params = ObjectUtils.asMap(
                 "resource_type", "auto",
                 "folder", "bqmusic_images"
         );
         try {
-            Map uploadResult = cloudinary.uploader()
+            Map<?,?> uploadResult = cloudinary.uploader()
                     .upload(file.getBytes(), params);
             Object secureUrl = uploadResult.get("secure_url");
             if (secureUrl == null) {

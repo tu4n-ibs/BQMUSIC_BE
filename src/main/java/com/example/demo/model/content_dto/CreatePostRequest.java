@@ -1,4 +1,4 @@
-package com.example.demo.model.user;
+package com.example.demo.model.content_dto;
 
 
 import com.example.demo.model.enum_object.TargetType;
@@ -14,7 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreatePostRequest {
-    private String userId;
 
     private String content;
 

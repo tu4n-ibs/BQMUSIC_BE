@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.ApiResponse;
-import com.example.demo.model.user.CreatePostRequest;
+import com.example.demo.model.content_dto.CreatePostRequest;
 import com.example.demo.service.content_service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

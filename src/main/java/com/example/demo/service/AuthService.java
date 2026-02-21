@@ -7,7 +7,6 @@ import com.example.demo.model.LoginResponse;
 import com.example.demo.model.enum_object.Provider;
 import com.example.demo.model.RefreshTokenRequest;
 import com.example.demo.repository.InvalidatedTokenRepository;
-import com.example.demo.repository.LogCRUDRepository;
 import com.example.demo.repository.RefreshTokenRepository;
 import com.example.demo.repository.UserRepository;
 import com.nimbusds.jose.*;
@@ -16,8 +15,6 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -43,11 +40,6 @@ public class AuthService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    private final LogCRUDRepository logCRUDRepository;
-
-    public Page<LogCrud> history(Pageable pageable) {
-        return logCRUDRepository.findAll(pageable);
-    }
 
     public String createJwt(UserEntity user) throws JOSEException {
         JWSHeader jweHeader = new JWSHeader(JWSAlgorithm.HS256);
@@ -186,7 +178,6 @@ public class AuthService {
             );
 
         } catch (Exception e) {
-            e.printStackTrace();
             return "http://localhost:3000/login?error=true";
         }
     }

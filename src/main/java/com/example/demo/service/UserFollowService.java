@@ -2,7 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.common.AppException;
 import com.example.demo.entity.UserEntity;
-import com.example.demo.entity.UserFollow;
+import com.example.demo.entity.UserFollowEntity;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -19,7 +19,6 @@ public class UserFollowService {
 
     @Transactional
     public void followUser(String followerId, String followingId) {
-        // 1. Validate: Không tự follow chính mình
         if (followerId.equals(followingId)) {
             throw new AppException(HttpStatus.BAD_REQUEST, "FOLLOW_SELF_ERR", "Cannot follow yourself");
         }
@@ -31,14 +30,12 @@ public class UserFollowService {
         UserEntity following = userRepository.findById(followingId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_002", "User to follow not found"));
 
-        // 3. Kiểm tra đã follow chưa
         if (userFollowRepository.existsByFollowerAndFollowing(follower, following)) {
-            // Thay thế IllegalStateException
             throw new AppException(HttpStatus.BAD_REQUEST, "FOLLOW_EXIST_ERR", "You are already following this user");
         }
 
         // 4. Lưu vào DB
-        UserFollow userFollow = new UserFollow();
+        UserFollowEntity userFollow = new UserFollowEntity();
         userFollow.setFollower(follower);
         userFollow.setFollowing(following);
 
@@ -54,7 +51,7 @@ public class UserFollowService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_002", "User to unfollow not found"));
 
         // Tìm record để xóa
-        UserFollow userFollow = userFollowRepository.findByFollowerAndFollowing(follower, following)
+        UserFollowEntity userFollow = userFollowRepository.findByFollowerAndFollowing(follower, following)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "FOLLOW_RELATION_NF", "Relationship not found (You haven't followed this user yet)"));
 
         userFollowRepository.delete(userFollow);

@@ -7,6 +7,7 @@ import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.CreateSongRequest;
 import com.example.demo.model.content_dto.SongResponse;
+import com.example.demo.model.enum_object.Status;
 import com.example.demo.repository.GenreRepository;
 import com.example.demo.repository.SongRepository;
 import com.example.demo.repository.UserRepository;
@@ -61,7 +62,6 @@ public class SongService {
         songEntity.setImageUrl(fileName);
         songRepository.save(songEntity);
     }
-
     public void save(CreateSongRequest request, MultipartFile musicFile) {
             String userID = SecurityUtils.getCurrentUserId();
             String musicUrl = cloudinaryServiceForMusic.uploadFile(musicFile);
@@ -81,12 +81,14 @@ public class SongService {
             song.setMusicUrl(musicUrl);
             song.setUser(user);
             song.setGenre(genre);
+            song.setStatus(Status.DRAFT);
             int duration = extractDuration(musicFile);
             song.setPlayCount(0);
             song.setDuration(duration);
 
             songRepository.save(song);
     }
+
     private int extractDuration(MultipartFile musicFile) {
         try {
             File tempFile = File.createTempFile("music_", ".mp3");

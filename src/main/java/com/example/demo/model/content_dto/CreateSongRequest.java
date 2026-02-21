@@ -9,6 +9,5 @@ import lombok.*;
 @Setter
 public class CreateSongRequest {
     private String name;
-    private String musicUrl;
     private String genreId;
 }

@@ -244,8 +244,9 @@ public class UserService {
     }
 
 
-    public List<UserSuggestResponse> getSuggestions(String email) {
-        UserEntity currentUser = userRepository.findByEmail(email)
+    public List<UserSuggestResponse> getSuggestions() {
+        String id = SecurityUtils.getCurrentUserId();
+        UserEntity currentUser = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "Current user not found"));
 
         List<UserEntity> suggestedUsers = userRepository.findSuggestedUsers(

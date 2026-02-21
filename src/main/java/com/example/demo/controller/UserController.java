@@ -48,10 +48,7 @@ public class UserController {
 
     @GetMapping("/suggestions")
     public ResponseEntity<List<UserSuggestResponse>> getSuggestions() {
-        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication().getName();
-
-        List<UserSuggestResponse> suggestions = userService.getSuggestions(currentUserEmail);
+        List<UserSuggestResponse> suggestions = userService.getSuggestions();
         return ResponseEntity.ok(suggestions);
     }
     @PostMapping("/send-otp")

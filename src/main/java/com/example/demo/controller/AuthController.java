@@ -1,16 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.LogCrud;
 import com.example.demo.model.LoginRequest;
 import com.example.demo.model.LoginResponse;
 import com.example.demo.model.RefreshTokenRequest;
 import com.example.demo.service.AuthService;
 import com.nimbusds.jose.JOSEException;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -33,10 +28,5 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public String refreshToken(@RequestBody RefreshTokenRequest request) throws JOSEException {
         return authService.refreshToken(request.refreshToken());
-    }
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public Page<LogCrud> history(@ParameterObject Pageable pageable){
-        return authService.history(pageable);
     }
 }

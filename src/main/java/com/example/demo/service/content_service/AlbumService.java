@@ -8,11 +8,13 @@ import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
 import com.example.demo.model.content_dto.AlbumSongDto;
+import com.example.demo.model.enum_object.Status;
 import com.example.demo.repository.AlbumRepository;
 import com.example.demo.repository.AlbumSongRepository;
 import com.example.demo.repository.SongRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CloudinaryServiceForImage;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -49,7 +51,7 @@ public class AlbumService {
     public List<AlbumEntity> findAll() {
         return albumRepository.findAll();
     }
-
+    @Transactional
     public void addSong(AlbumSongDto albumSongDto) {
 
         String userId = SecurityUtils.getCurrentUserId();
@@ -67,7 +69,9 @@ public class AlbumService {
                         "SONG_001",
                         "Cannot found this song"
                 ));
-
+        if (albumSongRepository.existsBySongEntity(song)){
+            throw new  AppException(HttpStatus.CONFLICT,"ALBUM_SONG_001","this song already exists");
+        }
         if (!userId.equals(album.getUser().getId())) {
             throw new AppException(
                     HttpStatus.FORBIDDEN,
@@ -83,7 +87,8 @@ public class AlbumService {
                     "You are not allowed to add this song"
             );
         }
-
+        song.setStatus(Status.PUBLISHED);
+        songRepository.save(song);
         Optional<Integer> opTrack =
                 albumSongRepository.findTopTrackByAlbumEntity_IdOrderByTrackNumberDescDesc(album.getId());
 

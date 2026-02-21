@@ -1,6 +1,7 @@
 package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
+import com.example.demo.model.enum_object.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
@@ -25,5 +26,6 @@ public class SongEntity extends BaseEntity {
     @ManyToOne
     private GenreEntity genre;
     private Integer playCount;
+    private Status status;
     private Integer duration;
 }

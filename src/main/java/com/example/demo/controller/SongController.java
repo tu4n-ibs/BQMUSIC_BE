@@ -34,8 +34,8 @@ public class SongController {
         return ApiResponse.success(result, "Lấy danh sách thành công");
     }
     @PutMapping("/update-image")
-    public ApiResponse<?> updateSongImage(@RequestParam String songId, @RequestParam(value = "file") MultipartFile musicFile) {
-        songService.updateImage(musicFile, songId);
+    public ApiResponse<?> updateSongImage(@RequestParam String songId, @RequestParam(value = "file") MultipartFile file) {
+        songService.updateImage(file, songId);
         return ApiResponse.success(null,"Success");
     }
 }

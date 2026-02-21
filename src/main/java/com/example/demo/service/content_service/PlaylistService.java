@@ -64,8 +64,7 @@ public class PlaylistService {
                         "Cannot found song"
                 ));
 
-        if (!userId.equals(song.getUser().getId()) ||
-                !userId.equals(playlist.getUser().getId())) {
+        if (!userId.equals(playlist.getUser().getId())) {
 
             throw new AppException(
                     HttpStatus.FORBIDDEN,
