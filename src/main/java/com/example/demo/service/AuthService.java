@@ -160,6 +160,7 @@ public class AuthService {
                         newUser.setEmail(email);
                         newUser.setName(name);
                         newUser.setImageUrl(picture);
+                        newUser.setIsActive(true);
                         newUser.setProvider(Provider.GOOGLE);
                         return userRepository.save(newUser);
                     });

@@ -6,6 +6,7 @@ import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
 
+    @Value("${admin.password.value}")
+    private  String adminPassword;
     @Override
     @Transactional
     public void run(String... args) {
@@ -45,8 +48,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     return roleRepository.saveAndFlush(role);
                 });
 
-        // Lấy lại Role ADMIN (bước này adminRole ở trên đã có thể dùng trực tiếp luôn,
-        // nhưng query lại cũng không sao vì đã được flush xuống DB)
+
         RoleEntity roleEntity = roleRepository.findByName("ADMIN").orElseThrow();
         boolean existsAdminUser = userRepository.existsByRoles(Set.of(roleEntity));
 
@@ -55,7 +57,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             adminUser.setEmail("admin@bqmusic.com");
             adminUser.setName("Administrator");
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
-            adminUser.setPassword(encoder.encode("admin"));
+            adminUser.setPassword(encoder.encode(adminPassword));
             adminUser.setIsActive(true);
 
             adminUser.getRoles().add(adminRole);
