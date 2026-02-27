@@ -13,11 +13,13 @@ import com.example.demo.repository.SongRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CloudinaryServiceForImage;
 import com.example.demo.service.CloudinaryServiceForMusic;
+import com.example.demo.specification.SongSpecification;
 import com.mpatric.mp3agic.Mp3File;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,20 +36,7 @@ public class SongService {
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
     private final UserRepository userRepository;
     private final GenreRepository genreRepository;
-    public Page<SongResponse> getAllSongs(Pageable pageable) {
-        Page<SongEntity> songPage = songRepository.findAll(pageable);
 
-        return songPage.map(song -> SongResponse.builder()
-                .id(song.getId())
-                .name(song.getName())
-                .musicUrl(song.getMusicUrl())
-                .imageUrl(song.getImageUrl())
-                .duration(song.getDuration())
-                .playCount(song.getPlayCount())
-                .artistName(song.getUser() != null ? song.getUser().getName() : "Unknown Artist")
-                .genreName(song.getGenre() != null ? song.getGenre().getName() : "Unknown Genre")
-                .build());
-    }
     public void updateImage(MultipartFile file, String SongId) {
         SongEntity songEntity = songRepository.findById(SongId)
                 .orElseThrow(()->new AppException(HttpStatus.NOT_FOUND,"SONG_001","cannot found song"));
@@ -62,7 +51,7 @@ public class SongService {
         songEntity.setImageUrl(fileName);
         songRepository.save(songEntity);
     }
-    public void save(CreateSongRequest request, MultipartFile musicFile) {
+    public void saveSongForPost(CreateSongRequest request, MultipartFile musicFile) {
             String userID = SecurityUtils.getCurrentUserId();
             String musicUrl = cloudinaryServiceForMusic.uploadFile(musicFile);
 
@@ -87,6 +76,27 @@ public class SongService {
             song.setDuration(duration);
 
             songRepository.save(song);
+    }
+
+    public Page<SongResponse> getSongsByUserWithPagination(Pageable pageable, String userId) {
+        Specification<SongEntity> spec = SongSpecification.hasUserId(userId);
+
+        Page<SongEntity> songPage = songRepository.findAll(spec, pageable);
+
+        return songPage.map(this::convertToResponse);
+    }
+
+    private SongResponse convertToResponse(SongEntity song) {
+        return SongResponse.builder()
+                .id(song.getId())
+                .name(song.getName())
+                .artistName(song.getUser() != null ? song.getUser().getName() : null)
+                .genreName(song.getGenre() != null ? song.getGenre().getName() : null)
+                .musicUrl(song.getMusicUrl())
+                .imageUrl(song.getImageUrl())
+                .duration(song.getDuration())
+                .playCount(song.getPlayCount())
+                .build();
     }
 
     private int extractDuration(MultipartFile musicFile) {

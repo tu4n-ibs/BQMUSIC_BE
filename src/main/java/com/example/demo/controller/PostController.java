@@ -1,9 +1,13 @@
 package com.example.demo.controller;
 
+import com.example.demo.entity.PostEntity;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.CreatePostRequest;
 import com.example.demo.service.content_service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,4 +23,8 @@ public class PostController {
         return ApiResponse.success(null);
     }
 
+    @GetMapping("/test-find-all-post")
+    public ApiResponse<Page<PostEntity>> getPosts(@ParameterObject Pageable pageable) {
+        return ApiResponse.success(postService.findAllPost(pageable));
+    }
 }

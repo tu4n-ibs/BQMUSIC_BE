@@ -2,10 +2,7 @@ package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
 import com.example.demo.model.enum_object.Status;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +23,9 @@ public class SongEntity extends BaseEntity {
     @ManyToOne
     private GenreEntity genre;
     private Integer playCount;
+    @Enumerated(EnumType.STRING)
     private Status status;
     private Integer duration;
+    @ManyToOne
+    private GroupEntity group;
 }

@@ -13,6 +13,8 @@ import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.SongRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +25,9 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final SongRepository songRepository;
-
+    public Page<PostEntity> findAllPost(Pageable pageable) {
+        return postRepository.findAll(pageable);
+    }
     public void userCreateNewPost(CreatePostRequest createPostRequest) {
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity userEntity = userRepository.findById(userId)

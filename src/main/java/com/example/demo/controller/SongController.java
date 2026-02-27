@@ -5,10 +5,9 @@ import com.example.demo.model.content_dto.CreateSongRequest;
 import com.example.demo.model.content_dto.SongResponse;
 import com.example.demo.service.content_service.SongService;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,17 +18,15 @@ public class SongController {
     private final SongService songService;
     @PostMapping
     public ApiResponse<?> saveSong( @ModelAttribute CreateSongRequest createSongRequest, @RequestParam(value = "file") MultipartFile musicFile) {
-        songService.save(createSongRequest, musicFile);
+        songService.saveSongForPost(createSongRequest, musicFile);
         return ApiResponse.success(null,"Success");
     }
-    @GetMapping
+    @GetMapping("songs/{userId}")
     public ApiResponse<Page<SongResponse>> getAllSongs(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @ParameterObject Pageable pageable,@PathVariable String userId
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        Page<SongResponse> result = songService.getAllSongs(pageable);
+        Page<SongResponse> result = songService.getSongsByUserWithPagination(pageable,userId);
 
         return ApiResponse.success(result, "Lấy danh sách thành công");
     }
@@ -38,4 +35,5 @@ public class SongController {
         songService.updateImage(file, songId);
         return ApiResponse.success(null,"Success");
     }
+
 }

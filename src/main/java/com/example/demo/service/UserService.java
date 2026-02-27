@@ -10,13 +10,14 @@ import com.example.demo.model.user.CreateRequest;
 import com.example.demo.model.user.UserDetailResponse;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.redis.RedisAuthRepository;
+import com.example.demo.repository.redis.RedisAuthSchema;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.SecureRandom;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,13 +32,13 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final StringRedisTemplate redisTemplate;
     private final EmailService emailService;
+    private final RedisAuthRepository redisAuthRepository;
     private final CloudinaryServiceForImage cloudinaryService;
 
     @Transactional
     public void register(CreateRequest createRequest) {
-        if (!Objects.equals(createRequest.getPassword(), createRequest.getRePassword())){
+        if (!Objects.equals(createRequest.getPassword(), createRequest.getRePassword())) {
             throw new AppException(
                     HttpStatus.BAD_REQUEST,
                     "PASSWORD_INVALID",
@@ -46,8 +46,8 @@ public class UserService {
             );
         }
 
-        String redisKey = "register_session:" + createRequest.getEmail();
-        String status = (String) redisTemplate.opsForHash().get(redisKey, "status");
+        String redisKey = RedisAuthSchema.getRegisterKey(createRequest.getEmail());
+        String status = redisAuthRepository.getStatus(redisKey);
 
         if (!"VERIFIED".equals(status)) {
             throw new AppException(
@@ -81,10 +81,9 @@ public class UserService {
                 ));
 
         userEntity.setRoles(Set.of(role));
-
         userRepository.save(userEntity);
 
-        redisTemplate.delete(redisKey);
+        redisAuthRepository.delete(redisKey);
     }
 
     @Transactional
@@ -93,23 +92,17 @@ public class UserService {
             throw new AppException(HttpStatus.NOT_FOUND, "USER_NOT_EXIST", "User not found");
         }
 
-        String key = "forgot_password:" + email;
+        String key = RedisAuthSchema.getForgotPasswordKey(email);
 
-        if (redisTemplate.hasKey(key)) {
-            String status = (String) redisTemplate.opsForHash().get(key, "status");
+        if (redisAuthRepository.isExists(key)) {
+            String status = redisAuthRepository.getStatus(key);
             if ("PENDING".equals(status)) {
                 throw new AppException(HttpStatus.CONFLICT, "OTP_EXIST", "Please wait 90 seconds before requesting another OTP");
             }
         }
 
         String otpCode = processOtpCode();
-
-        Map<String, String> data = new HashMap<>();
-        data.put("otp", otpCode);
-        data.put("status", "PENDING");
-
-        redisTemplate.opsForHash().putAll(key, data);
-        redisTemplate.expire(key, 90, TimeUnit.SECONDS);
+        redisAuthRepository.saveOtpSession(key, otpCode, 90);
 
         try {
             String htmlContent = emailService.buildForgotPasswordEmailTemplate(otpCode, email);
@@ -119,6 +112,7 @@ public class UserService {
                     "Unable to send verification email");
         }
     }
+
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
@@ -126,8 +120,8 @@ public class UserService {
                     "Mật khẩu nhập lại không khớp");
         }
 
-        String key = "forgot_password:" + request.getEmail();
-        String status = (String) redisTemplate.opsForHash().get(key, "status");
+        String key = RedisAuthSchema.getForgotPasswordKey(request.getEmail());
+        String status = redisAuthRepository.getStatus(key);
 
         if (!"VERIFIED".equals(status)) {
             throw new AppException(HttpStatus.FORBIDDEN, "RESET_INVALID",
@@ -138,17 +132,15 @@ public class UserService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NOT_EXIST", "User not found"));
 
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
-
         user.setPassword(encoder.encode(request.getNewPassword()));
-
         userRepository.save(user);
 
-        redisTemplate.delete(key);
+        redisAuthRepository.delete(key);
     }
-    public void verifyOTPForgotPassword(String email, String inputCode) {
-        String key = "forgot_password:" + email;
 
-        String storedOtp = (String) redisTemplate.opsForHash().get(key, "otp");
+    public void verifyOTPForgotPassword(String email, String inputCode) {
+        String key = RedisAuthSchema.getForgotPasswordKey(email);
+        String storedOtp = redisAuthRepository.getOtp(key);
 
         if (storedOtp == null) {
             throw new AppException(HttpStatus.BAD_REQUEST, "OTP_EXPIRED", "Mã xác thực hết hạn hoặc không tồn tại");
@@ -158,41 +150,31 @@ public class UserService {
             throw new AppException(HttpStatus.BAD_REQUEST, "OTP_INVALID", "Mã xác thực không đúng");
         }
 
-        redisTemplate.opsForHash().put(key, "status", "VERIFIED");
-
-        redisTemplate.opsForHash().delete(key, "otp");
-
-        redisTemplate.expire(key, 30, TimeUnit.MINUTES);
+        redisAuthRepository.verifySession(key, 30);
     }
-    private String processOtpCode( ) {
+
+    private String processOtpCode() {
         return String.format("%04d", new SecureRandom().nextInt(10000));
-
     }
+
     @Transactional
     public void sendSMS(String email) {
         if (userRepository.existsByEmail(email)) {
             throw new AppException(HttpStatus.CONFLICT, "USER_EXIST_001", "Email has already been used");
         }
 
-        String key = "register_session:" + email;
+        String key = RedisAuthSchema.getRegisterKey(email);
 
-        if (redisTemplate.hasKey(key)) {
-            String status = (String) redisTemplate.opsForHash().get(key, "status");
+        if (redisAuthRepository.isExists(key)) {
+            String status = redisAuthRepository.getStatus(key);
             if ("PENDING".equals(status)) {
                 throw new AppException(HttpStatus.CONFLICT, "SMS_EXIST", "can not send another sms until 90s after send");
             }
         }
 
         String otpCode = processOtpCode();
+        redisAuthRepository.saveOtpSession(key, otpCode, 90);
 
-        Map<String, String> data = new HashMap<>();
-        data.put("otp", otpCode);
-        data.put("status", "PENDING");
-
-        redisTemplate.opsForHash().putAll(key, data);
-        redisTemplate.expire(key, 90, TimeUnit.SECONDS);
-
-        // Gửi email OTP
         try {
             String htmlContent = emailService.buildOtpEmailTemplate(otpCode, email);
             emailService.sendHtmlMail(email, "register code", htmlContent);
@@ -202,11 +184,9 @@ public class UserService {
         }
     }
 
-
     public void verifyOTP(String email, String inputCode) {
-        String key = "register_session:" + email;
-
-        String storedOtp = (String) redisTemplate.opsForHash().get(key, "otp");
+        String key = RedisAuthSchema.getRegisterKey(email);
+        String storedOtp = redisAuthRepository.getOtp(key);
 
         if (storedOtp == null) {
             throw new AppException(HttpStatus.BAD_REQUEST, "OTP_EXPIRED", "Mã xác thực hết hạn hoặc không tồn tại");
@@ -216,11 +196,7 @@ public class UserService {
             throw new AppException(HttpStatus.BAD_REQUEST, "OTP_INVALID", "Mã xác thực không đúng");
         }
 
-        redisTemplate.opsForHash().put(key, "status", "VERIFIED");
-
-        redisTemplate.opsForHash().delete(key, "otp");
-
-        redisTemplate.expire(key, 30, TimeUnit.MINUTES);
+        redisAuthRepository.verifySession(key, 30);
     }
 
     public Page<UserPageResponse> findAll(Pageable pageable) {
@@ -243,7 +219,6 @@ public class UserService {
         });
     }
 
-
     public List<UserSuggestResponse> getSuggestions() {
         String id = SecurityUtils.getCurrentUserId();
         UserEntity currentUser = userRepository.findById(id)
@@ -265,25 +240,27 @@ public class UserService {
 
     public void delete(String id) {
         UserEntity userEntity = userRepository.findById(id)
-                .orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
         userEntity.setIsActive(false);
         userRepository.save(userEntity);
     }
 
     public void UpdateImage(MultipartFile file) {
         String id = SecurityUtils.getCurrentUserId();
-        UserEntity userEntity = userRepository.findById(id).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        UserEntity userEntity = userRepository.findById(id).orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
         String urlImage = cloudinaryService.uploadFile(file);
         userEntity.setImageUrl(urlImage);
         userRepository.save(userEntity);
     }
+
     public void UpdateName(String name) {
-        UserEntity userEntity = userRepository.findById(SecurityUtils.getCurrentUserId()).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        UserEntity userEntity = userRepository.findById(SecurityUtils.getCurrentUserId()).orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
         userEntity.setName(name);
         userRepository.save(userEntity);
     }
+
     public UserDetailResponse getUserDetail(String id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(()->new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
-        return new UserDetailResponse(user.getId(),user.getName(), user.getImageUrl());
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        return new UserDetailResponse(user.getId(), user.getName(), user.getImageUrl());
     }
 }

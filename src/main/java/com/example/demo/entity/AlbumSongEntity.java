@@ -4,6 +4,7 @@ import com.example.demo.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "album_song")
+@Table(name = "album_song",uniqueConstraints = {@UniqueConstraint(columnNames = {"song_entity_id", "album_entity_id"})})
 public class AlbumSongEntity extends BaseEntity {
     @ManyToOne
     private AlbumEntity albumEntity;

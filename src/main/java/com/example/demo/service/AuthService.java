@@ -88,7 +88,9 @@ public class AuthService {
 
         UserEntity userEntity = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "AUTH_NF_001", "User not found"));
-
+        if (userEntity.getIsActive().equals(false)) {
+            throw new  AppException(HttpStatus.CONFLICT,"USER_BLOCK","User blocked");
+        }
         if (!passwordEncoder.matches(password, userEntity.getPassword())) {
             throw new AppException(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_CREDENTIALS", "Invalid password");
         }
@@ -105,8 +107,6 @@ public class AuthService {
         var verified = signedJWT.verify(verifier);
 
         if (!(verified && expiryTime.after(new Date()))) {
-            // Nếu bạn muốn giữ TokenExpiredException riêng thì giữ, hoặc đổi thành AppException như dưới:
-            // throw new AppException(HttpStatus.UNAUTHORIZED, "TOKEN_EXP_001", "Token expired or invalid");
             throw new TokenExpiredException("Token expired or invalid");
         }
         return signedJWT;
