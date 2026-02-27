@@ -11,7 +11,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Set;
 
 @Component
@@ -21,54 +21,53 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${admin.password.value}")
     private  String adminPassword;
     @Override
-    @Transactional
     public void run(String... args) {
+        transactionTemplate.execute(status -> {
+            createRoleIfNotFound("ADMIN");
+            createRoleIfNotFound("USER");
+            return null;
+        });
 
-        // SỬA: Dùng saveAndFlush thay vì save
-        RoleEntity adminRole = roleRepository.findByName("ADMIN")
-                .orElseGet(() -> {
-                    RoleEntity role = new RoleEntity();
-                    role.setName("ADMIN");
-                    role.setIsActive(true);
-                    log.info("Đã tạo mới Role: ADMIN");
-                    return roleRepository.saveAndFlush(role);
-                });
+        transactionTemplate.execute(status -> {
+            RoleEntity adminRole = roleRepository.findByName("ADMIN")
+                    .orElseThrow(() -> new RuntimeException("Error: Role ADMIN not found."));
 
-        // SỬA: Dùng saveAndFlush thay vì save
-        roleRepository.findByName("USER")
-                .orElseGet(() -> {
-                    RoleEntity role = new RoleEntity();
-                    role.setName("USER");
-                    role.setIsActive(true);
-                    log.info("Đã tạo mới Role: USER");
-                    return roleRepository.saveAndFlush(role);
-                });
+            if (!userRepository.existsByEmail("admin@bqmusic.com")) {
+                UserEntity adminUser = new UserEntity();
+                adminUser.setEmail("admin@bqmusic.com");
+                adminUser.setName("Administrator");
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
+                adminUser.setPassword(encoder.encode(adminPassword));
+                adminUser.setIsActive(true);
 
+                // Save user first without roles
+                adminUser = userRepository.saveAndFlush(adminUser);
 
-        RoleEntity roleEntity = roleRepository.findByName("ADMIN").orElseThrow();
-        boolean existsAdminUser = userRepository.existsByRoles(Set.of(roleEntity));
-
-        if (!existsAdminUser) {
-            UserEntity adminUser = new UserEntity();
-            adminUser.setEmail("admin@bqmusic.com");
-            adminUser.setName("Administrator");
-            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
-            adminUser.setPassword(encoder.encode(adminPassword));
-            adminUser.setIsActive(true);
-
-            adminUser.getRoles().add(adminRole);
-
-            // Ghi User và User_Role xuống DB
-            userRepository.saveAndFlush(adminUser);
-            log.info("Đã tạo mới User Admin mặc định");
-        } else {
-            log.info("Đã tồn tại User có Role ADMIN → Không cần tạo nữa");
-        }
+                // Now add roles and save again
+                adminUser.getRoles().add(adminRole);
+                userRepository.saveAndFlush(adminUser);
+                log.info("Đã tạo mới User Admin mặc định");
+            } else {
+                log.info("Đã tồn tại User admin@bqmusic.com");
+            }
+            return null;
+        });
 
         log.info("Hoàn tất kiểm tra dữ liệu khởi tạo!");
+    }
+
+    private void createRoleIfNotFound(String roleName) {
+        roleRepository.findByName(roleName).orElseGet(() -> {
+            RoleEntity role = new RoleEntity();
+            role.setName(roleName);
+            role.setIsActive(true);
+            log.info("Đã tạo mới Role: {}", roleName);
+            return roleRepository.saveAndFlush(role);
+        });
     }
 }

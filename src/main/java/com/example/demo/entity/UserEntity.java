@@ -22,7 +22,7 @@ public class UserEntity extends BaseEntity {
     private String email;
     private String imageUrl;
     private String imageHash;
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.MERGE)
     @JoinTable(
             name = "user_role",
             joinColumns = @JoinColumn(name = "user_id"),
