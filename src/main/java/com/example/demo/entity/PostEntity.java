@@ -33,6 +33,8 @@ public class PostEntity extends BaseEntity {
 
     private String content;
 
+    private String originalContent;
+
     @Enumerated(EnumType.STRING)
     private Visibility visibility;
 

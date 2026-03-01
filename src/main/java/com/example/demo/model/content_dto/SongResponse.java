@@ -8,8 +8,8 @@ import lombok.Data;
 public class SongResponse {
     private String id;
     private String name;
-    private String artistName; // Tên người đăng (User)
-    private String genreName;  // Tên thể loại
+    private String artistName;
+    private String genreName;
     private String musicUrl;
     private String imageUrl;
     private Integer duration;
