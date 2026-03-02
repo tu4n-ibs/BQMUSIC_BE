@@ -1,21 +1,16 @@
 package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
-import com.example.demo.model.enum_object.ContextType;
-import com.example.demo.model.enum_object.PostType;
-import com.example.demo.model.enum_object.TargetType;
-import com.example.demo.model.enum_object.Visibility;
+import com.example.demo.model.enum_object.*;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Table(name = "post")
 public class PostEntity extends BaseEntity {
     @ManyToOne
@@ -42,4 +37,6 @@ public class PostEntity extends BaseEntity {
     private TargetType targetType;
 
     private String targetId;
+
+    private ApprovalStatus approvalStatus;
 }

@@ -21,8 +21,8 @@ public class GroupBanEntity extends BaseEntity {
     private UserEntity userBan;
     
     @ManyToOne
-    @JoinColumn(name = "group_ban", nullable = false)
-    private GroupEntity groupBan;
+    @JoinColumn(nullable = false)
+    private GroupEntity group;
 
     @ManyToOne
     @JoinColumn(name = "banned_by")

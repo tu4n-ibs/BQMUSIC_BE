@@ -2,15 +2,10 @@ package com.example.demo.service.content_service;
 
 import com.example.demo.common.AppException;
 import com.example.demo.common.SecurityUtils;
-import com.example.demo.entity.AlbumSongEntity;
-import com.example.demo.entity.PostEntity;
-import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.*;
 import com.example.demo.model.content_dto.*;
 
-import com.example.demo.model.enum_object.ContextType;
-import com.example.demo.model.enum_object.PostType;
-import com.example.demo.model.enum_object.TargetType;
-import com.example.demo.model.enum_object.Visibility;
+import com.example.demo.model.enum_object.*;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +25,8 @@ public class PostService {
     private final SongRepository songRepository;
     private final AlbumRepository albumRepository;
     private final AlbumSongRepository albumSongRepository;
+    private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     public Page<PostEntity> findAllPost(Pageable pageable) {
         return postRepository.findAll(pageable);
@@ -38,47 +35,113 @@ public class PostService {
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
-
-        validateTargetExists(createPostRequest.getTargetType(), createPostRequest.getTargetId());
-
-        ContextType contextType = ContextType.PROFILE;
-        PostType postType = PostType.OWNER;
-        String content = createPostRequest.getContent();
-        Visibility visibility = createPostRequest.getVisibility();
-        TargetType targetType = createPostRequest.getTargetType();
-        String targetId = createPostRequest.getTargetId();
-
-        // Khởi tạo Entity - Đảm bảo constructor của bạn khớp với thứ tự này
+        validateTargetExists(createPostRequest.getTargetType(), createPostRequest.getTargetId(),userId);
         PostEntity postEntity = new PostEntity(
                 userEntity,
-                contextType,
+                ContextType.PROFILE,
                 null,
-                postType,
+                PostType.OWNER,
                 null,
-                content,
+                createPostRequest.getContent(),
                 null,
-                visibility,
-                targetType,
-                targetId
+                createPostRequest.getVisibility(),
+                createPostRequest.getTargetType(),
+                createPostRequest.getTargetId(),
+                null
         );
-
         postRepository.save(postEntity);
     }
+    private void validateTargetExists(TargetType targetType, String targetId, String userId) {
+        if (targetType == null || targetId == null) return;
 
-    private void validateTargetExists(TargetType targetType, String targetId) {
-        if (targetType == null || targetId == null) {
-            return; // Hoặc quăng lỗi nếu bắt buộc phải có target
+        switch (targetType) {
+            case SONG -> {
+                SongEntity song = songRepository.findById(targetId)
+                        .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "SONG_NF_001", "Song not found"));
+
+                if (!song.getUser().getId().equals(userId)) {
+                    throw new AppException(HttpStatus.FORBIDDEN, "SONG_FB_001", "You don't own this song");
+                }
+
+                song.setStatus(Status.PUBLISHED);
+                songRepository.save(song);
+            }
+            case ALBUM -> {
+                if (!albumRepository.existsById(targetId)) {
+                    throw new AppException(HttpStatus.NOT_FOUND, "ALBUM_NF_001", "Album not found");
+                }
+            }
+        }
+    }
+
+    public void sharePost(SharePostRequest request) {
+        String userId = SecurityUtils.getCurrentUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+
+        // 1. Tìm bài được share
+        PostEntity targetPost = postRepository.findById(request.getOriginalPostId())
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "POST_NF_001", "Post not found"));
+
+        // 2. Nếu bài đó cũng là SHARE → trỏ về bài gốc thực sự, tránh chain vô tận
+        PostEntity rootPost = (targetPost.getPostType() == PostType.SHARE && targetPost.getOriginalPost() != null)
+                ? targetPost.getOriginalPost()
+                : targetPost;
+
+        // 3. Không cho share bài PRIVATE (trừ chính chủ)
+        if (rootPost.getVisibility() == Visibility.PRIVATE
+                && !rootPost.getUserEntity().getId().equals(userId)) {
+            throw new AppException(HttpStatus.FORBIDDEN, "POST_FB_001", "This post cannot be shared");
         }
 
-        if (targetType == TargetType.SONG) {
-            if (!songRepository.existsById(targetId)) {
-                throw new AppException(HttpStatus.NOT_FOUND, "SONG_NF_001", "Song not found with id: " + targetId);
+        // 4. Xử lý theo context
+        ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+        String contextId ;
+
+        if (request.getContextType() == ContextType.GROUP) {
+            if (request.getContextId() == null) {
+                throw new AppException(HttpStatus.BAD_REQUEST, "GROUP_BR_001", "Group id is required");
             }
-        } else if (targetType == TargetType.ALBUM) {
-            if (!albumRepository.existsById(targetId)) {
-                throw new AppException(HttpStatus.NOT_FOUND, "ALBUM_NF_001", "Album not found with id: " + targetId);
+
+            GroupEntity group = groupRepository.findById(request.getContextId())
+                    .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
+
+            // Kiểm tra user có trong group không
+            boolean isMember = groupMemberRepository
+                    .existsByGroupEntity_IdAndUserEntity_Id(group.getId(), userId);
+            if (!isMember) {
+                throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "You are not a member of this group");
             }
+
+            // Nếu group yêu cầu duyệt → PENDING
+            if (Boolean.TRUE.equals(group.getRequirePostApproval())) {
+                approvalStatus = ApprovalStatus.PENDING;
+            }
+
+            contextId = group.getId();
+
+        } else {
+            // PROFILE → contextId là userId
+            contextId = userId;
         }
+
+        // 5. Tạo bài share
+        PostEntity sharePost = PostEntity.builder()
+                .userEntity(user)
+                .contextType(request.getContextType())
+                .contextTypeId(contextId)
+                .postType(PostType.SHARE)
+                .originalPost(rootPost)                  // luôn trỏ về bài gốc thực sự
+                .content(request.getContent())           // caption của người share
+                .originalContent(rootPost.getContent()) // snapshot nội dung gốc
+                .visibility(request.getVisibility())
+                .targetType(rootPost.getTargetType())    // kế thừa target từ bài gốc
+                .targetId(rootPost.getTargetId())
+                .approvalStatus(approvalStatus)
+                .build();
+
+        postRepository.save(sharePost);
     }
 
     public PostDetailResponse getPostDetail(String postId) {
@@ -143,5 +206,61 @@ public class PostService {
             });
         }
         return builder.build();
+    }
+    public void createGroupPost(String groupId, CreateGroupPostRequest request) {
+        String userId = SecurityUtils.getCurrentUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
+
+        // 1. Kiểm tra user có phải member của group không
+        boolean isMember = groupMemberRepository.existsByGroupEntity_IdAndUserEntity_Id(groupId, userId);
+        if (!isMember) {
+            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "You are not a member of this group");
+        }
+
+        // 2. Validate target tồn tại — chỉ check, không mutate
+        //    (Song trong group không tự động PUBLISHED như post profile)
+        validateTargetExists(request.getTargetType(), request.getTargetId());
+
+        // 3. Xác định approvalStatus dựa vào setting của group
+        ApprovalStatus approvalStatus = Boolean.TRUE.equals(group.getRequirePostApproval())
+                ? ApprovalStatus.PENDING
+                : ApprovalStatus.APPROVED;
+
+        PostEntity post = PostEntity.builder()
+                .userEntity(user)
+                .contextType(ContextType.GROUP)
+                .contextTypeId(groupId)
+                .postType(PostType.OWNER)
+                .content(request.getContent())
+                .visibility(request.getVisibility())
+                .targetType(request.getTargetType())
+                .targetId(request.getTargetId())
+                .approvalStatus(approvalStatus)
+                .build();
+
+        postRepository.save(post);
+    }
+
+    // validate dùng chung — không truyền userId vì group post không check ownership song
+    private void validateTargetExists(TargetType targetType, String targetId) {
+        if (targetType == null || targetId == null) return;
+
+        switch (targetType) {
+            case SONG -> {
+                if (!songRepository.existsById(targetId)) {
+                    throw new AppException(HttpStatus.NOT_FOUND, "SONG_NF_001", "Song not found");
+                }
+            }
+            case ALBUM -> {
+                if (!albumRepository.existsById(targetId)) {
+                    throw new AppException(HttpStatus.NOT_FOUND, "ALBUM_NF_001", "Album not found");
+                }
+            }
+        }
     }
 }

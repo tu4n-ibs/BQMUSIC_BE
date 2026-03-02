@@ -4,16 +4,14 @@ import com.example.demo.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Table(name = "groups")
 public class GroupEntity extends BaseEntity {
     private String name;
@@ -21,4 +19,6 @@ public class GroupEntity extends BaseEntity {
     private String description;
     private String imageUrl;
     Boolean isPrivate;
+    @Column(name = "require_post_approval")
+    private Boolean requirePostApproval;
 }
