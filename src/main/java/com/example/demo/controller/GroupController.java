@@ -3,11 +3,15 @@ package com.example.demo.controller;
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.CreateGroupRequest;
+import com.example.demo.model.content_dto.GroupJoinRequestResponse;
 import com.example.demo.service.content_service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -111,5 +115,30 @@ public class GroupController {
             @RequestAttribute("userId") String currentUserId) {
         groupService.reviewJoinRequest(groupId, requestId, approve, currentUserId);
         return ApiResponse.success(null);
+    }
+
+    @Operation(
+            summary = "Lấy danh sách yêu cầu tham gia đang chờ duyệt",
+            description = """
+    Lấy tất cả các yêu cầu tham gia nhóm đang ở trạng thái `PENDING`.
+
+    **Quy tắc:**
+    - Người gọi phải là **thành viên** của nhóm
+    - Người gọi phải có vai trò **ADMIN**
+    - Chỉ trả về các yêu cầu có trạng thái `PENDING`
+    - Nếu nhóm không tồn tại → trả về lỗi `404`
+    - Nếu người dùng không phải ADMIN → trả về lỗi `403`
+    - Cái groupJoinRequestId dùng để từ chối hoặc chấp nhận làm thành viên
+    """
+    )
+    @GetMapping("/{groupId}/join-requests/pending")
+    public ResponseEntity<List<GroupJoinRequestResponse>> getPendingJoinRequests(
+            @PathVariable String groupId
+    ) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        List<GroupJoinRequestResponse> responses =
+                groupService.getPendingRequests(groupId, currentUserId);
+
+        return ResponseEntity.ok(responses);
     }
 }

@@ -3,6 +3,8 @@ package com.example.demo.service;
 import com.example.demo.common.AppException;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.entity.UserFollowEntity;
+import com.example.demo.model.content_dto.UserProfileStatsResponse;
+import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -16,6 +18,7 @@ public class UserFollowService {
 
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
+    private final PostRepository postRepository;
 
     @Transactional
     public void followUser(String followerId, String followingId) {
@@ -55,5 +58,29 @@ public class UserFollowService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "FOLLOW_RELATION_NF", "Relationship not found (You haven't followed this user yet)"));
 
         userFollowRepository.delete(userFollow);
+    }
+    public UserProfileStatsResponse getProfileStats(String targetUserId, String currentUserId) {
+        // 1. Kiểm tra user có tồn tại không
+        if (!userRepository.existsById(targetUserId)) {
+            throw new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found");
+        }
+
+        // 2. Lấy các thông số đếm
+        long postCount = postRepository.countByUserEntity_Id(targetUserId);
+        long followers = userFollowRepository.countByFollowing_Id(targetUserId);
+        long following = userFollowRepository.countByFollower_Id(targetUserId);
+
+        // 3. Kiểm tra trạng thái follow (nếu người xem khác chủ profile)
+        boolean isFollowing = false;
+        if (currentUserId != null && !currentUserId.equals(targetUserId)) {
+            isFollowing = userFollowRepository.existsByFollower_IdAndFollowing_Id(currentUserId, targetUserId);
+        }
+
+        return UserProfileStatsResponse.builder()
+                .postCount(postCount)
+                .followerCount(followers)
+                .followingCount(following)
+                .isFollowing(isFollowing)
+                .build();
     }
 }

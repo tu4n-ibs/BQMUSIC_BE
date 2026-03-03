@@ -2,6 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.entity.UserEntity;
+import com.example.demo.model.ApiResponse;
+import com.example.demo.model.content_dto.UserProfileStatsResponse;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserFollowService;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +35,15 @@ public class UserFollowController {
 
         userFollowService.unfollowUser(currentUserId, targetId);
         return new ResponseEntity<>(targetId, HttpStatus.OK);
+    }
+
+    @GetMapping("/{userId}/stats")
+    public ApiResponse<UserProfileStatsResponse> getUserStats(
+            @PathVariable String userId) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        UserProfileStatsResponse stats = userFollowService.getProfileStats(userId, currentUserId);
+
+        return ApiResponse.<UserProfileStatsResponse>builder()
+                .data(stats).build();
     }
 }

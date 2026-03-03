@@ -2,10 +2,7 @@ package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
@@ -15,6 +12,7 @@ import lombok.Setter;
 @Table(name = "group_ban",uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_ban", "group_ban"})
 })
+@Builder
 public class GroupBanEntity extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_ban", nullable = false)
