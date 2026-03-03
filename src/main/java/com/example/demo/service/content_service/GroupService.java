@@ -3,6 +3,7 @@ package com.example.demo.service.content_service;
 import com.example.demo.common.AppException;
 import com.example.demo.entity.*;
 import com.example.demo.model.content_dto.CreateGroupRequest;
+import com.example.demo.model.content_dto.GroupByUser;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
 import com.example.demo.model.enum_object.GroupJoinStatus;
 import com.example.demo.model.enum_object.GroupRole;
@@ -263,5 +264,26 @@ public class GroupService {
         if (member.getGroupRole() != GroupRole.ADMIN) {
             throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only group admin can perform this action");
         }
+    }
+    public List<GroupByUser> getGroupsByUserId(String userId) {
+        // 1. Kiểm tra user có tồn tại không (Optional nhưng nên có để chặt chẽ)
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found");
+        }
+
+        // 2. Lấy danh sách các quan hệ Group - Member của user này
+        List<GroupMemberEntity> memberships = groupMemberRepository.findAllByUserEntity_Id(userId);
+
+        // 3. Map từ Entity sang DTO
+        return memberships.stream()
+                .map(membership -> {
+                    GroupEntity group = membership.getGroupEntity();
+                    return GroupByUser.builder()
+                            .groupId(group.getId())
+                            .groupName(group.getName())
+                            .groupImageUrl(group.getImageUrl())
+                            .build();
+                })
+                .toList();
     }
 }

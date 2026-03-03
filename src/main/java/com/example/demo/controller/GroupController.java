@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.CreateGroupRequest;
+import com.example.demo.model.content_dto.GroupByUser;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
 import com.example.demo.service.content_service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -200,5 +201,14 @@ public class GroupController {
             @RequestAttribute("userId") String currentUserId) {
         groupService.unbanUser(groupId, targetUserId, currentUserId);
         return ApiResponse.success(null);
+    }
+    @Operation(
+            summary = "Lấy danh sách các nhóm mà người dùng tham gia",
+            description = "Trả về danh sách các nhóm (ID, tên, ảnh) mà userId hiện tại đang là thành viên hoặc admin."
+    )
+    @GetMapping("/user/{userId}")
+    public ApiResponse<List<GroupByUser>> getGroupsByUser(@PathVariable String userId) {
+        List<GroupByUser> groups = groupService.getGroupsByUserId(userId);
+        return ApiResponse.success(groups);
     }
 }

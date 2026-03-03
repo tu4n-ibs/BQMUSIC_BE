@@ -2,14 +2,8 @@ package com.example.demo.service.content_service;
 
 import com.example.demo.common.AppException;
 import com.example.demo.common.SecurityUtils;
-import com.example.demo.entity.PlayListEntity;
-import com.example.demo.entity.PlayListSongEntity;
-import com.example.demo.entity.SongEntity;
-import com.example.demo.entity.UserEntity;
-import com.example.demo.model.content_dto.PlayListSongDto;
-import com.example.demo.model.content_dto.PlaylistCreateRequest;
-import com.example.demo.model.content_dto.SongPlayListResponse;
-import com.example.demo.model.content_dto.UserPlaylistResponse;
+import com.example.demo.entity.*;
+import com.example.demo.model.content_dto.*;
 import com.example.demo.repository.PlaylistRepository;
 import com.example.demo.repository.PlaylistSongRepository;
 import com.example.demo.repository.SongRepository;
@@ -134,8 +128,9 @@ public class PlaylistService {
                     .playlistId(playlist.getId())
                     .playlistName(playlist.getName())
                     .songCount(count)
-                    .createdAt(playlist.getCreatedAt()) // Giả định BaseEntity có field này
+                    .createdAt(playlist.getCreatedAt())
                     .build();
         }).toList();
     }
+
 }

@@ -5,6 +5,7 @@ import com.example.demo.model.enum_object.GroupRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,4 +16,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMemberEntity,S
     Optional<GroupMemberEntity> findByGroupEntity_IdAndUserEntity_Id(String groupEntityId, String userEntityId);
 
     long countByGroupEntity_IdAndGroupRole(String groupEntityId, GroupRole groupRole);
+
+    List<GroupMemberEntity> findAllByUserEntity_Id(String userEntityId);
 }
