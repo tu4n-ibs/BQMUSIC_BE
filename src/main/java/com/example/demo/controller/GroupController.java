@@ -141,4 +141,64 @@ public class GroupController {
 
         return ResponseEntity.ok(responses);
     }
+    @PostMapping("/{groupId}/leave")
+    @Operation(
+            summary = "Rời khỏi nhóm",
+            description = """
+            Người dùng hiện tại tự động rời khỏi nhóm.
+            
+            **Quy tắc:**
+            - Người gọi API phải đang là thành viên của nhóm.
+            - Nếu người dùng đang là `ADMIN` duy nhất của nhóm, họ **không thể** rời nhóm. Hệ thống sẽ báo lỗi yêu cầu chỉ định Admin mới hoặc giải tán nhóm trước.
+            """
+    )
+    public ApiResponse<?> leaveGroup(
+            @PathVariable String groupId,
+            @RequestAttribute("userId") String currentUserId) {
+        groupService.leaveGroup(groupId, currentUserId);
+        return ApiResponse.success(null);
+    }
+
+    // ==================== CẤM (BAN) NGƯỜI DÙNG ====================
+    @PostMapping("/{groupId}/bans/{targetUserId}")
+    @Operation(
+            summary = "Cấm (Ban) người dùng khỏi nhóm",
+            description = """
+            Quản trị viên cấm một người dùng tham gia hoặc tương tác với nhóm.
+            
+            **Quy tắc:**
+            - Người gọi API phải có quyền `ADMIN` trong nhóm.
+            - `ADMIN` không thể tự cấm chính mình.
+            - Nếu người bị cấm đang là thành viên, họ sẽ tự động bị xóa khỏi nhóm.
+            - Nếu người bị cấm đang có yêu cầu tham gia (Join Request) ở trạng thái PENDING, yêu cầu đó sẽ bị xóa.
+            - Báo lỗi nếu người dùng đã nằm trong danh sách bị cấm từ trước.
+            """
+    )
+    public ApiResponse<?> banUser(
+            @PathVariable String groupId,
+            @PathVariable String targetUserId,
+            @RequestAttribute("userId") String currentUserId) {
+        groupService.banUser(groupId, targetUserId, currentUserId);
+        return ApiResponse.success(null);
+    }
+
+    // ==================== BỎ CẤM (UNBAN) NGƯỜI DÙNG ====================
+    @DeleteMapping("/{groupId}/bans/{targetUserId}")
+    @Operation(
+            summary = "Bỏ cấm (Unban) người dùng",
+            description = """
+            Quản trị viên gỡ bỏ lệnh cấm, cho phép người dùng có thể gửi lại yêu cầu tham gia nhóm.
+            
+            **Quy tắc:**
+            - Người gọi API phải có quyền `ADMIN` trong nhóm.
+            - Trả về lỗi nếu người dùng mục tiêu không nằm trong danh sách bị cấm.
+            """
+    )
+    public ApiResponse<?> unbanUser(
+            @PathVariable String groupId,
+            @PathVariable String targetUserId,
+            @RequestAttribute("userId") String currentUserId) {
+        groupService.unbanUser(groupId, targetUserId, currentUserId);
+        return ApiResponse.success(null);
+    }
 }
