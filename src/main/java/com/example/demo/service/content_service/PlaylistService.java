@@ -8,6 +8,8 @@ import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.PlayListSongDto;
 import com.example.demo.model.content_dto.PlaylistCreateRequest;
+import com.example.demo.model.content_dto.SongPlayListResponse;
+import com.example.demo.model.content_dto.UserPlaylistResponse;
 import com.example.demo.repository.PlaylistRepository;
 import com.example.demo.repository.PlaylistSongRepository;
 import com.example.demo.repository.SongRepository;
@@ -90,5 +92,50 @@ public class PlaylistService {
 
         playlistSongRepository.save(playlistSong);
     }
+    public List<SongPlayListResponse> songPlayListResponse(String playListId) {
+        // 1. Tìm tất cả các bản ghi trong bảng trung gian playlist_song theo playListId
+        List<PlayListSongEntity> playlistSongs = playlistSongRepository.findByPlayListEntity_Id(playListId);
 
+        // 2. Lấy số lượng bài hát trong playlist để điền vào field songCount (nếu cần)
+        long songCount = playlistSongs.size();
+
+        // 3. Map dữ liệu sang SongPlayListResponse
+        return playlistSongs.stream().map(ps -> {
+            SongEntity song = ps.getSongEntity();
+            PlayListEntity playlist = ps.getPlayListEntity();
+            UserEntity artist = song.getUser(); // Giả định UserEntity ở đây là nghệ sĩ sáng tác
+
+            return SongPlayListResponse.builder()
+                    .songId(song.getId())
+                    .songName(song.getName())
+                    .songImage(song.getImageUrl())
+                    .songArtistId(artist != null ? artist.getId() : null)
+                    .songArtistName(artist != null ? artist.getName() : "Unknown Artist")
+                    // Nếu SongEntity không có field Album trực tiếp,
+                    // bạn có thể để null hoặc lấy từ GroupEntity nếu Group là Album
+                    .songAlbum(song.getGroup() != null ? song.getGroup().getId() : null)
+                    .albumName(song.getGroup() != null ? song.getGroup().getName() : "Single")
+                    .songCount(songCount)
+                    .playlistName(playlist.getName())
+                    .playlistId(playlist.getId())
+                    .build();
+        }).toList();
+    }
+    public List<UserPlaylistResponse> getAllPlaylistsByUserId(String userId) {
+        // 1. Lấy danh sách playlist của User
+        List<PlayListEntity> playlists = playlistRepository.findByUser_Id(userId);
+
+        // 2. Map sang DTO UserPlaylistResponse
+        return playlists.stream().map(playlist -> {
+            // Đếm số bài hát có trong playlist này
+            long count = playlistSongRepository.countByPlayListEntity_Id(playlist.getId());
+
+            return UserPlaylistResponse.builder()
+                    .playlistId(playlist.getId())
+                    .playlistName(playlist.getName())
+                    .songCount(count)
+                    .createdAt(playlist.getCreatedAt()) // Giả định BaseEntity có field này
+                    .build();
+        }).toList();
+    }
 }
