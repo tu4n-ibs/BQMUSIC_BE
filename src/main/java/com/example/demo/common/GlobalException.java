@@ -48,9 +48,10 @@ public class GlobalException {
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         ex.printStackTrace();
 
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Đã có lỗi xảy ra phía máy chủ.";
         ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Đã có lỗi xảy ra phía máy chủ.",
+                msg,
                 "INTERNAL_SERVER_ERROR"
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);

@@ -17,9 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class SongController {
     private final SongService songService;
     @PostMapping
-    public ApiResponse<?> saveSong( @ModelAttribute CreateSongRequest createSongRequest, @RequestParam(value = "file") MultipartFile musicFile) {
-        songService.saveSongForPost(createSongRequest, musicFile);
-        return ApiResponse.success(null,"Success");
+    public ApiResponse<SongResponse> saveSong( @ModelAttribute CreateSongRequest createSongRequest, @RequestParam(value = "file") MultipartFile musicFile) {
+        SongResponse result = songService.saveSongForPost(createSongRequest, musicFile);
+        return ApiResponse.success(result,"Success");
     }
     @GetMapping("songs/{userId}")
     public ApiResponse<Page<SongResponse>> getAllSongs(

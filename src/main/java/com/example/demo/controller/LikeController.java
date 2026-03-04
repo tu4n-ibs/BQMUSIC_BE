@@ -25,8 +25,18 @@ Trả về trạng thái mới nhất (`isLiked`) và tổng số lượt like h
     )
     @PostMapping("/post/{postId}/toggle")
     public ApiResponse<LikeResponse> toggleLike(@PathVariable String postId) {
-        LikeResponse response = likeService.toggleLike(postId);
-        return ApiResponse.success(response);
+        try {
+            LikeResponse response = likeService.toggleLike(postId);
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                msg += " | Cause: " + cause.getMessage();
+                if (cause.getCause() != null) msg += " | Root: " + cause.getCause().getMessage();
+            }
+            throw new RuntimeException("DB_SAVE_ERROR: " + msg);
+        }
     }
 
     @Operation(
