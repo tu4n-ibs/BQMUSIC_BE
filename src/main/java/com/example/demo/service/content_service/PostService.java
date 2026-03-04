@@ -35,19 +35,16 @@ public class PostService {
         UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
         validateTargetExists(createPostRequest.getTargetType(), createPostRequest.getTargetId(),userId);
-        PostEntity postEntity = new PostEntity(
-                userEntity,
-                ContextType.PROFILE,
-                null,
-                PostType.OWNER,
-                null,
-                createPostRequest.getContent(),
-                null,
-                createPostRequest.getVisibility(),
-                createPostRequest.getTargetType(),
-                createPostRequest.getTargetId(),
-                null
-        );
+        PostEntity postEntity = PostEntity.builder()
+                .userEntity(userEntity)
+                .contextType(ContextType.PROFILE)
+                .postType(PostType.OWNER)
+                .content(createPostRequest.getContent())
+                .visibility(createPostRequest.getVisibility())
+                .targetType(createPostRequest.getTargetType())
+                .targetId(createPostRequest.getTargetId())
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .build();
         postRepository.save(postEntity);
     }
     private void validateTargetExists(TargetType targetType, String targetId, String userId) {
@@ -152,6 +149,11 @@ public class PostService {
                 : post;
         long likeCount = likeRepository.countByPost_Id(postId);
         long commentCount = commentRepository.countByPost_Id(postId);
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = likeRepository.existsByPost_IdAndUser_Id(postId, currentUserId);
+        }
         PostDetailResponse.PostDetailResponseBuilder builder = PostDetailResponse.builder()
                 .userId(post.getUserEntity().getId())
                 .userName(post.getUserEntity().getName())
@@ -164,6 +166,7 @@ public class PostService {
                 .targetType(contentPost.getTargetType())
                 .likeCount(likeCount)
                 .commentCount(commentCount)
+                .isLiked(isLiked)
                 .targetId(contentPost.getTargetId());
 
         // 3. Mapping thông tin Share (nếu có)
@@ -292,6 +295,7 @@ public class PostService {
                     .idPost(post.getId())
                     .likeCount(likeRepository.countByPost_Id(post.getId()))
                     .commentCount(commentRepository.countByPost_Id(post.getId()))
+                    .isLiked(currentUserId != null && likeRepository.existsByPost_IdAndUser_Id(post.getId(), currentUserId))
                     .postDate(post.getCreatedAt().toString())
                     .postType(post.getPostType())
                     .contextType(post.getContextType())
@@ -371,6 +375,7 @@ public class PostService {
                     .idPost(post.getId())
                     .likeCount(likeRepository.countByPost_Id(post.getId()))
                     .commentCount(commentRepository.countByPost_Id(post.getId()))
+                    .isLiked(currentUserId != null && likeRepository.existsByPost_IdAndUser_Id(post.getId(), currentUserId))
                     .postDate(post.getCreatedAt().toString())
                     .postType(post.getPostType())
                     .contextType(post.getContextType())

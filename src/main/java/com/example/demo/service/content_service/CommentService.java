@@ -56,7 +56,7 @@ public class CommentService {
                 .content(request.getContent())
                 .post(post)
                 .user(user)
-                .ParentComment(parentComment)
+                .parent(parentComment)
                 .depth(depth)
                 .build();
 
@@ -70,7 +70,7 @@ public class CommentService {
         }
 
         return commentRepository
-                .findAllByPost_IdAndParentCommentIsNull(postId, pageable)
+                .findAllByPost_IdAndParentIsNull(postId, pageable)
                 .map(this::toResponse); // Page.map() bảo toàn metadata phân trang
     }
 
@@ -81,7 +81,7 @@ public class CommentService {
         }
 
         return commentRepository
-                .findAllByParentComment_Id(commentId, pageable)
+                .findAllByParent_Id(commentId, pageable)
                 .map(this::toResponse); // BỎ .stream(), dùng trực tiếp .map() của Page
     }
 
@@ -118,7 +118,7 @@ public class CommentService {
 
     // Đệ quy xóa replies
     private void deleteRepliesRecursive(String commentId) {
-        Page<CommentEntity> replies = commentRepository.findAllByParentComment_Id(commentId,Pageable.ofSize(10000));
+        Page<CommentEntity> replies = commentRepository.findAllByParent_Id(commentId,Pageable.ofSize(10000));
         for (CommentEntity reply : replies) {
             deleteRepliesRecursive(reply.getId());
             commentRepository.delete(reply);
@@ -134,10 +134,11 @@ public class CommentService {
                 .userName(comment.getUser().getName())
                 .userImageUrl(comment.getUser().getImageUrl())
                 .postId(comment.getPost().getId())
-                .parentCommentId(comment.getParentComment() != null
-                        ? comment.getParentComment().getId()
+                .parentCommentId(comment.getParent() != null
+                        ? comment.getParent().getId()
                         : null)
                 .depth(comment.getDepth())
+                .replyCount(commentRepository.countByParent_Id(comment.getId()))
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
