@@ -2,16 +2,14 @@ package com.example.demo.entity;
 
 import com.example.demo.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Table(name = "likes",uniqueConstraints = {
         @UniqueConstraint(columnNames = {"post_id", "user_id"})
 })

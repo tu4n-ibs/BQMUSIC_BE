@@ -1,11 +1,7 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.PostEntity;
 import com.example.demo.model.ApiResponse;
-import com.example.demo.model.content_dto.CreateGroupPostRequest;
-import com.example.demo.model.content_dto.CreatePostRequest;
-import com.example.demo.model.content_dto.PostDetailResponse;
-import com.example.demo.model.content_dto.SharePostRequest;
+import com.example.demo.model.content_dto.*;
 import com.example.demo.service.content_service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,10 +25,7 @@ public class PostController {
         return ApiResponse.success(null);
     }
 
-    @GetMapping("/test-find-all-post")
-    public ApiResponse<Page<PostEntity>> getPosts(@ParameterObject Pageable pageable) {
-        return ApiResponse.success(postService.findAllPost(pageable));
-    }
+
     @GetMapping("post/{postId}")
     @Tag(name = "xem chi tiết post", description = "Người dùng bấm vào một Post bất kỳ")
     public ApiResponse<PostDetailResponse> postDetail(@PathVariable String postId) {
@@ -79,5 +72,49 @@ public class PostController {
             @RequestBody @Valid CreateGroupPostRequest request) {
         postService.createGroupPost(groupId, request);
         return ApiResponse.success(null);
+    }
+    @Operation(
+            summary = "Lấy danh sách bài viết của một người dùng (Phân trang)",
+            description = """
+Lấy tất cả bài viết mà một User đã đăng (bao gồm cả bài Share).
+Dữ liệu trả về dưới dạng Page để tối ưu hiệu năng.
+
+**Tham số phân trang:**
+- `page`: Số trang (bắt đầu từ 0)
+- `size`: Số lượng bài mỗi trang (mặc định 10)
+- `sort`: Sắp xếp (ví dụ: `createdAt,desc`)
+"""
+    )
+    @GetMapping("/user/{userId}")
+    public ApiResponse<Page<PostResponsePage>> getAllPostsByUser(
+            @PathVariable String userId,
+            @ParameterObject Pageable pageable
+    ) {
+        // Gọi service xử lý logic lấy post và map song/album
+        Page<PostResponsePage> posts = postService.findAllPostByUser(userId, pageable);
+
+        return ApiResponse.success(posts);
+    }
+    @Operation(
+            summary = "Lấy danh sách bài viết trong một nhóm (Phân trang)",
+            description = """
+Lấy toàn bộ bài viết đã được duyệt (`APPROVED`) trong một nhóm cụ thể.
+
+**Quy tắc:**
+- Người gọi phải là **thành viên** của nhóm (đã join).
+- Nếu không phải thành viên -> Trả về lỗi `403 Forbidden`.
+- Nếu nhóm không tồn tại -> Trả về lỗi `404 Not Found`.
+- Trả về đầy đủ thông tin: Người đăng, số Like, số Comment, thông tin bài gốc (nếu là bài Share), và dữ liệu Song/Album đi kèm.
+"""
+    )
+    @GetMapping("group/{groupId}")
+    public ApiResponse<Page<PostResponsePage>> getPostsByGroup(
+            @PathVariable String groupId,
+            @ParameterObject Pageable pageable
+    ) {
+        // Service đã tự lấy currentUserId qua SecurityUtils để check isMember
+        Page<PostResponsePage> posts = postService.findAllPostByGroup(groupId, pageable);
+
+        return ApiResponse.success(posts);
     }
 }

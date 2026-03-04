@@ -27,10 +27,9 @@ public class PostService {
     private final AlbumSongRepository albumSongRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
 
-    public Page<PostEntity> findAllPost(Pageable pageable) {
-        return postRepository.findAll(pageable);
-    }
     public void userCreateNewPost(CreatePostRequest createPostRequest) {
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity userEntity = userRepository.findById(userId)
@@ -151,7 +150,8 @@ public class PostService {
         PostEntity contentPost = (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null)
                 ? post.getOriginalPost()
                 : post;
-
+        long likeCount = likeRepository.countByPost_Id(postId);
+        long commentCount = commentRepository.countByPost_Id(postId);
         PostDetailResponse.PostDetailResponseBuilder builder = PostDetailResponse.builder()
                 .userId(post.getUserEntity().getId())
                 .userName(post.getUserEntity().getName())
@@ -162,6 +162,8 @@ public class PostService {
                 .postType(post.getPostType())
                 .visibility(post.getVisibility())
                 .targetType(contentPost.getTargetType())
+                .likeCount(likeCount)
+                .commentCount(commentCount)
                 .targetId(contentPost.getTargetId());
 
         // 3. Mapping thông tin Share (nếu có)
@@ -263,4 +265,154 @@ public class PostService {
             }
         }
     }
+    public Page<PostResponsePage> findAllPostByUser(String userId, Pageable pageable) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        boolean isOwner = currentUserId.equals(userId);
+        Page<PostEntity> posts;
+        if (isOwner) {
+            posts = postRepository.findPostsByUserIdForOwner(userId, pageable);
+        } else {
+            posts = postRepository.findPostsByUserId(
+                    userId, currentUserId,
+                    ContextType.PROFILE,
+                    ApprovalStatus.APPROVED,
+                    Visibility.PRIVATE,
+                    pageable
+            );
+        }
+        return posts.map(post -> {
+            PostEntity contentPost = (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null)
+                    ? post.getOriginalPost()
+                    : post;
+
+            PostResponsePage.PostResponsePageBuilder builder = PostResponsePage.builder()
+                    .idUser(post.getUserEntity().getId())
+                    .imageUrlUser(post.getUserEntity().getImageUrl())
+                    .username(post.getUserEntity().getName())
+                    .idPost(post.getId())
+                    .likeCount(likeRepository.countByPost_Id(post.getId()))
+                    .commentCount(commentRepository.countByPost_Id(post.getId()))
+                    .postDate(post.getCreatedAt().toString())
+                    .postType(post.getPostType())
+                    .contextType(post.getContextType())
+                    .visibility(post.getVisibility())
+                    .targetType(contentPost.getTargetType());
+
+            // Group context
+            if (post.getContextType() == ContextType.GROUP && post.getContextTypeId() != null) {
+                groupRepository.findById(post.getContextTypeId()).ifPresent(group -> {
+                    builder.groupId(group.getId());
+                    builder.groupName(group.getName());
+                });
+            }
+
+            // Share info
+            if (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null) {
+                PostEntity original = post.getOriginalPost();
+                builder.userIdShare(original.getUserEntity().getId())
+                        .userNameShare(original.getUserEntity().getName())
+                        .userImageShare(original.getUserEntity().getImageUrl())
+                        .contentShare(original.getContent())
+                        .timeShare(original.getCreatedAt());
+
+                // Nếu bài gốc thuộc GROUP
+                if (original.getContextType() == ContextType.GROUP && original.getContextTypeId() != null) {
+                    groupRepository.findById(original.getContextTypeId()).ifPresent(group -> {
+                        builder.groupPostIdShare(group.getId());
+                        builder.groupPostNameShare(group.getName());
+                    });
+                }
+            }
+
+            // Target: SONG
+            if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+                songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
+                        .imageUrlSong(song.getImageUrl())
+                        .nameSong(song.getName()));
+            }
+
+            // Target: ALBUM
+            if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+                albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
+                        .imageUrlAlbum(album.getImageUrl())
+                        .nameAlbum(album.getName()));
+            }
+
+            return builder.build();
+        });
+    }
+    public Page<PostResponsePage> findAllPostByGroup(String groupId, Pageable pageable) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
+
+        boolean isMember = groupMemberRepository.existsByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId);
+        if (!isMember) {
+            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "You are not a member of this group");
+        }
+
+        Page<PostEntity> posts = postRepository.findPostsByGroupId(
+                groupId,
+                ContextType.GROUP,
+                ApprovalStatus.APPROVED,
+                pageable
+        );
+
+        return posts.map(post -> {
+            PostEntity contentPost = (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null)
+                    ? post.getOriginalPost()
+                    : post;
+
+            PostResponsePage.PostResponsePageBuilder builder = PostResponsePage.builder()
+                    .idUser(post.getUserEntity().getId())
+                    .imageUrlUser(post.getUserEntity().getImageUrl())
+                    .username(post.getUserEntity().getName())
+                    .idPost(post.getId())
+                    .likeCount(likeRepository.countByPost_Id(post.getId()))
+                    .commentCount(commentRepository.countByPost_Id(post.getId()))
+                    .postDate(post.getCreatedAt().toString())
+                    .postType(post.getPostType())
+                    .contextType(post.getContextType())
+                    .visibility(post.getVisibility())
+                    .targetType(contentPost.getTargetType())
+                    .groupId(group.getId())
+                    .groupName(group.getName());
+
+            // Share info
+            if (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null) {
+                PostEntity original = post.getOriginalPost();
+                builder.userIdShare(original.getUserEntity().getId())
+                        .userNameShare(original.getUserEntity().getName())
+                        .userImageShare(original.getUserEntity().getImageUrl())
+                        .contentShare(original.getContent())
+                        .timeShare(original.getCreatedAt());
+
+                // Nếu bài gốc thuộc GROUP
+                if (original.getContextType() == ContextType.GROUP && original.getContextTypeId() != null) {
+                    groupRepository.findById(original.getContextTypeId()).ifPresent(originalGroup -> {
+                        builder.groupPostIdShare(originalGroup.getId());
+                        builder.groupPostNameShare(originalGroup.getName());
+                    });
+                }
+            }
+
+            // Target: SONG
+            if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+                songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
+                        .imageUrlSong(song.getImageUrl())
+                        .nameSong(song.getName()));
+            }
+
+            // Target: ALBUM
+            if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+                albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
+                        .imageUrlAlbum(album.getImageUrl())
+                        .nameAlbum(album.getName()));
+            }
+
+            return builder.build();
+        });
+    }
+
 }

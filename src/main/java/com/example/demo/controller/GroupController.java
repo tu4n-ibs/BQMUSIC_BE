@@ -211,4 +211,5 @@ public class GroupController {
         List<GroupByUser> groups = groupService.getGroupsByUserId(userId);
         return ApiResponse.success(groups);
     }
+
 }
