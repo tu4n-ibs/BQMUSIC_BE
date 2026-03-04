@@ -23,7 +23,7 @@ public class CommentResponse {
     private String parentCommentId;
 
     private int depth;
-
+    private Long replyCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

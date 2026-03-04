@@ -17,7 +17,7 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
     SELECT p FROM PostEntity p
     WHERE p.userEntity.id = :userId
       AND p.contextType = :contextType
-      AND p.approvalStatus = :approvalStatus
+      AND (p.approvalStatus = :approvalStatus OR p.approvalStatus IS NULL)
       AND (
           p.visibility != :privateVisibility
           OR p.userEntity.id = :currentUserId

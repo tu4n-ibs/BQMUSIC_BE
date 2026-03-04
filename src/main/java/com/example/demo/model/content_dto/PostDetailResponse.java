@@ -38,5 +38,6 @@ public class PostDetailResponse {
     private int songView;
     private long likeCount;
     private long commentCount;
+    private boolean isLiked;
 }
 
