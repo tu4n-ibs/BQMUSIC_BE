@@ -51,7 +51,7 @@ public class SongService {
         songEntity.setImageUrl(fileName);
         songRepository.save(songEntity);
     }
-    public void saveSongForPost(CreateSongRequest request, MultipartFile musicFile) {
+    public SongResponse saveSongForPost(CreateSongRequest request, MultipartFile musicFile) {
             String userID = SecurityUtils.getCurrentUserId();
             String musicUrl = cloudinaryServiceForMusic.uploadFile(musicFile);
 
@@ -75,7 +75,8 @@ public class SongService {
             song.setPlayCount(0);
             song.setDuration(duration);
 
-            songRepository.save(song);
+            SongEntity savedSong = songRepository.save(song);
+            return convertToResponse(savedSong);
     }
 
     public Page<SongResponse> getSongsByUserWithPagination(Pageable pageable, String userId) {
