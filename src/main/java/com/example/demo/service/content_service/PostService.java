@@ -63,8 +63,11 @@ public class PostService {
                 songRepository.save(song);
             }
             case ALBUM -> {
-                if (!albumRepository.existsById(targetId)) {
-                    throw new AppException(HttpStatus.NOT_FOUND, "ALBUM_NF_001", "Album not found");
+                AlbumEntity album = albumRepository.findById(targetId)
+                        .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ALBUM_NF_001", "Album not found"));
+
+                if (!album.getUser().getId().equals(userId)) {
+                    throw new AppException(HttpStatus.FORBIDDEN, "ALBUM_FB_001", "You don't own this album");
                 }
             }
         }
@@ -112,7 +115,12 @@ public class PostService {
 
             // Nếu group yêu cầu duyệt → PENDING
             if (Boolean.TRUE.equals(group.getRequirePostApproval())) {
-                approvalStatus = ApprovalStatus.PENDING;
+                boolean isAdmin = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(group.getId(), userId)
+                        .map(m -> m.getGroupRole() == GroupRole.ADMIN)
+                        .orElse(false);
+                if (!isAdmin) {
+                    approvalStatus = ApprovalStatus.PENDING;
+                }
             }
 
             contextId = group.getId();
@@ -232,9 +240,15 @@ public class PostService {
         validateTargetExists(request.getTargetType(), request.getTargetId());
 
         // 3. Xác định approvalStatus dựa vào setting của group
-        ApprovalStatus approvalStatus = Boolean.TRUE.equals(group.getRequirePostApproval())
-                ? ApprovalStatus.PENDING
-                : ApprovalStatus.APPROVED;
+        ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+        if (Boolean.TRUE.equals(group.getRequirePostApproval())) {
+            boolean isAdmin = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, userId)
+                    .map(m -> m.getGroupRole() == GroupRole.ADMIN)
+                    .orElse(false);
+            if (!isAdmin) {
+                approvalStatus = ApprovalStatus.PENDING;
+            }
+        }
 
         PostEntity post = PostEntity.builder()
                 .userEntity(user)
@@ -268,16 +282,17 @@ public class PostService {
             }
         }
     }
-    public Page<PostResponsePage> findAllPostByUser(String userId, Pageable pageable) {
+    public Page<PostResponsePage> findAllPostByUser(String userId, PostType postType, Pageable pageable) {
         String currentUserId = SecurityUtils.getCurrentUserId();
         boolean isOwner = currentUserId.equals(userId);
         Page<PostEntity> posts;
         if (isOwner) {
-            posts = postRepository.findPostsByUserIdForOwner(userId, pageable);
+            posts = postRepository.findPostsByUserIdForOwner(userId, postType, pageable);
         } else {
             posts = postRepository.findPostsByUserId(
                     userId, currentUserId,
                     ContextType.PROFILE,
+                    postType,
                     ApprovalStatus.APPROVED,
                     Visibility.PRIVATE,
                     pageable
@@ -317,6 +332,7 @@ public class PostService {
                         .userNameShare(original.getUserEntity().getName())
                         .userImageShare(original.getUserEntity().getImageUrl())
                         .contentShare(original.getContent())
+                        .idPostShare(original.getId())
                         .timeShare(original.getCreatedAt());
 
                 // Nếu bài gốc thuộc GROUP
@@ -352,11 +368,11 @@ public class PostService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
 
         boolean isMember = groupMemberRepository.existsByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId);
-        if (!isMember) {
-            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "You are not a member of this group");
+        if (group.getIsPrivate() != null && group.getIsPrivate() && !isMember) {
+            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "This community is private. You must be a member to view its posts.");
         }
 
-        Page<PostEntity> posts = postRepository.findPostsByGroupId(
+        Page<PostEntity> posts = postRepository.findAllByContextTypeIdAndContextTypeAndApprovalStatusOrderByCreatedAtDesc(
                 groupId,
                 ContextType.GROUP,
                 ApprovalStatus.APPROVED,
@@ -377,12 +393,14 @@ public class PostService {
                     .commentCount(commentRepository.countByPost_Id(post.getId()))
                     .isLiked(currentUserId != null && likeRepository.existsByPost_IdAndUser_Id(post.getId(), currentUserId))
                     .postDate(post.getCreatedAt().toString())
+                    .content(contentPost.getContent())
                     .postType(post.getPostType())
                     .contextType(post.getContextType())
                     .visibility(post.getVisibility())
                     .targetType(contentPost.getTargetType())
                     .groupId(group.getId())
-                    .groupName(group.getName());
+                    .groupName(group.getName())
+                    .approvalStatus(post.getApprovalStatus());
 
             // Share info
             if (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null) {
@@ -406,7 +424,8 @@ public class PostService {
             if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                         .imageUrlSong(song.getImageUrl())
-                        .nameSong(song.getName()));
+                        .nameSong(song.getName())
+                        .musicLink(song.getMusicUrl()));
             }
 
             // Target: ALBUM
@@ -420,4 +439,116 @@ public class PostService {
         });
     }
 
+    public Page<PostResponsePage> getPendingPostsByGroup(String groupId, Pageable pageable) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
+
+        // Chỉ Admin mới xem được pending posts
+        boolean isAdmin = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId)
+                .map(m -> m.getGroupRole() == GroupRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin) {
+            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only admins can view pending posts");
+        }
+
+        Page<PostEntity> posts = postRepository.findAllByContextTypeIdAndContextTypeAndApprovalStatusOrderByCreatedAtDesc(
+                groupId,
+                ContextType.GROUP,
+                ApprovalStatus.PENDING,
+                pageable
+        );
+
+        return posts.map(this::mapToPostResponsePage);
+    }
+
+    public void reviewPost(String postId, boolean approve) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "POST_NF_001", "Post not found"));
+
+        if (post.getContextType() != ContextType.GROUP || post.getContextTypeId() == null) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "POST_BR_002", "This post is not in a group context");
+        }
+
+        String groupId = post.getContextTypeId();
+        boolean isAdmin = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId)
+                .map(m -> m.getGroupRole() == GroupRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin) {
+            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only admins can review posts");
+        }
+
+        if (approve) {
+            post.setApprovalStatus(ApprovalStatus.APPROVED);
+            postRepository.save(post);
+        } else {
+            postRepository.delete(post);
+        }
+    }
+
+    private PostResponsePage mapToPostResponsePage(PostEntity post) {
+        PostEntity contentPost = (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null)
+                ? post.getOriginalPost()
+                : post;
+
+        GroupEntity group = null;
+        if (post.getContextType() == ContextType.GROUP && post.getContextTypeId() != null) {
+            group = groupRepository.findById(post.getContextTypeId()).orElse(null);
+        }
+
+        PostResponsePage.PostResponsePageBuilder builder = PostResponsePage.builder()
+                .idUser(post.getUserEntity().getId())
+                .imageUrlUser(post.getUserEntity().getImageUrl())
+                .username(post.getUserEntity().getName())
+                .idPost(post.getId())
+                .likeCount(likeRepository.countByPost_Id(post.getId()))
+                .commentCount(commentRepository.countByPost_Id(post.getId()))
+                .postDate(post.getCreatedAt().toString())
+                .content(contentPost.getContent())
+                .postType(post.getPostType())
+                .contextType(post.getContextType())
+                .visibility(post.getVisibility())
+                .targetType(contentPost.getTargetType())
+                .approvalStatus(post.getApprovalStatus())
+                .isLiked(likeRepository.existsByPost_IdAndUser_Id(post.getId(), SecurityUtils.getCurrentUserId()));
+
+        if (group != null) {
+            builder.groupId(group.getId()).groupName(group.getName());
+        }
+
+        // Share info
+        if (post.getPostType() == PostType.SHARE && post.getOriginalPost() != null) {
+            PostEntity original = post.getOriginalPost();
+            builder.userIdShare(original.getUserEntity().getId())
+                    .userNameShare(original.getUserEntity().getName())
+                    .userImageShare(original.getUserEntity().getImageUrl())
+                    .contentShare(original.getContent())
+                    .idPostShare(original.getId())
+                    .timeShare(original.getCreatedAt());
+
+            if (original.getContextType() == ContextType.GROUP && original.getContextTypeId() != null) {
+                groupRepository.findById(original.getContextTypeId()).ifPresent(g -> {
+                    builder.groupPostIdShare(g.getId());
+                    builder.groupPostNameShare(g.getName());
+                });
+            }
+        }
+
+        // Target info
+        if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+            songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
+                    .imageUrlSong(song.getImageUrl())
+                    .nameSong(song.getName())
+                    .musicLink(song.getMusicUrl()));
+        }
+
+        if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
+            albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
+                    .imageUrlAlbum(album.getImageUrl())
+                    .nameAlbum(album.getName()));
+        }
+
+        return builder.build();
+    }
 }

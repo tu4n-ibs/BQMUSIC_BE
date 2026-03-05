@@ -7,6 +7,9 @@ import com.example.demo.model.content_dto.UserProfileStatsResponse;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.model.enum_object.PostType;
+import com.example.demo.model.enum_object.ContextType;
+import com.example.demo.model.enum_object.ApprovalStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,8 +68,10 @@ public class UserFollowService {
             throw new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found");
         }
 
-        // 2. Lấy các thông số đếm
-        long postCount = postRepository.countByUserEntity_Id(targetUserId);
+        // 2. Lấy các thông số đếm (Chỉ tính các bài OWNER được đăng trên PROFILE và đã APPROVED)
+        long postCount = postRepository.countByUserEntity_IdAndPostTypeAndContextTypeAndApprovalStatus(
+                targetUserId, PostType.OWNER, ContextType.PROFILE, ApprovalStatus.APPROVED
+        );
         long followers = userFollowRepository.countByFollowing_Id(targetUserId);
         long following = userFollowRepository.countByFollower_Id(targetUserId);
 

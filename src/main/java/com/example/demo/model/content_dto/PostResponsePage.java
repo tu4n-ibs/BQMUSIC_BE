@@ -1,5 +1,6 @@
 package com.example.demo.model.content_dto;
 
+import com.example.demo.model.enum_object.ApprovalStatus;
 import com.example.demo.model.enum_object.ContextType;
 import com.example.demo.model.enum_object.PostType;
 import com.example.demo.model.enum_object.TargetType;
@@ -26,6 +27,7 @@ public class PostResponsePage {
     private String idSong;
     private String imageUrlSong;
     private String nameSong;
+    private String musicLink;
     private PostType postType; //    SHARE, OWNER
     private ContextType contextType; //GROUP, PROFILE
     private Visibility visibility; //     FRIEND,PRIVATE,PUBLIC;
@@ -41,6 +43,9 @@ public class PostResponsePage {
     private String groupPostIdShare;
     private String groupPostNameShare;
     private String contentShare;
+    private String content;
     private LocalDateTime timeShare;
+    private String idPostShare;
     private boolean isLiked;
+    private ApprovalStatus approvalStatus;
 }

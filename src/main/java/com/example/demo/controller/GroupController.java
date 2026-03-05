@@ -5,6 +5,7 @@ import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.CreateGroupRequest;
 import com.example.demo.model.content_dto.GroupByUser;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
+import com.example.demo.model.content_dto.GroupDetailResponse;
 import com.example.demo.service.content_service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -18,7 +19,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/groups")
 public class GroupController {
- private final GroupService groupService;
+    private final GroupService groupService;
+
+    @GetMapping("/{groupId}")
+    @Operation(
+            summary = "Lấy chi tiết một nhóm",
+            description = "Trả về thông tin chi tiết của một nhóm dựa trên ID."
+    )
+    public ApiResponse<GroupDetailResponse> getGroupDetail(@PathVariable String groupId) {
+        return ApiResponse.success(groupService.getGroupDetail(groupId));
+    }
 
     @PostMapping
     @Operation(
@@ -112,8 +122,8 @@ public class GroupController {
     public ApiResponse<?> reviewJoinRequest(
             @PathVariable String groupId,
             @PathVariable String requestId,
-            @RequestParam boolean approve,
-            @RequestAttribute("userId") String currentUserId) {
+            @RequestParam boolean approve) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
         groupService.reviewJoinRequest(groupId, requestId, approve, currentUserId);
         return ApiResponse.success(null);
     }
@@ -154,8 +164,8 @@ public class GroupController {
             """
     )
     public ApiResponse<?> leaveGroup(
-            @PathVariable String groupId,
-            @RequestAttribute("userId") String currentUserId) {
+            @PathVariable String groupId) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
         groupService.leaveGroup(groupId, currentUserId);
         return ApiResponse.success(null);
     }
@@ -177,8 +187,8 @@ public class GroupController {
     )
     public ApiResponse<?> banUser(
             @PathVariable String groupId,
-            @PathVariable String targetUserId,
-            @RequestAttribute("userId") String currentUserId) {
+            @PathVariable String targetUserId) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
         groupService.banUser(groupId, targetUserId, currentUserId);
         return ApiResponse.success(null);
     }
@@ -197,11 +207,22 @@ public class GroupController {
     )
     public ApiResponse<?> unbanUser(
             @PathVariable String groupId,
-            @PathVariable String targetUserId,
-            @RequestAttribute("userId") String currentUserId) {
+            @PathVariable String targetUserId) {
+        String currentUserId = SecurityUtils.getCurrentUserId();
         groupService.unbanUser(groupId, targetUserId, currentUserId);
         return ApiResponse.success(null);
     }
+    @Operation(
+            summary = "Lấy tất cả các nhóm",
+            description = "Trả về danh sách tất cả các nhóm (ID, tên, ảnh, mô tả, số lượng thành viên)."
+    )
+    @GetMapping
+    public ApiResponse<List<GroupByUser>> getAllGroups() {
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        List<GroupByUser> groups = groupService.getDiscoverGroups(currentUserId);
+        return ApiResponse.success(groups);
+    }
+
     @Operation(
             summary = "Lấy danh sách các nhóm mà người dùng tham gia",
             description = "Trả về danh sách các nhóm (ID, tên, ảnh) mà userId hiện tại đang là thành viên hoặc admin."
@@ -211,5 +232,4 @@ public class GroupController {
         List<GroupByUser> groups = groupService.getGroupsByUserId(userId);
         return ApiResponse.success(groups);
     }
-
 }

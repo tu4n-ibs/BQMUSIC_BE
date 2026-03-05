@@ -80,7 +80,7 @@ public class AuthService {
 
         Set<RoleEntity> roles = userEntity.getRoles();
         Set<String> roleSet = roles.stream().map(RoleEntity::getName).collect(Collectors.toSet());
-        return new LoginResponse(token, refreshToken, roleSet, userEntity.getId(),userEntity.getEmail());
+        return new LoginResponse(token, refreshToken, roleSet, userEntity.getId(), userEntity.getEmail(), userEntity.getName(), userEntity.getImageUrl());
     }
 
     public LoginResponse login(String email, String password) throws JOSEException, ParseException {
@@ -174,8 +174,8 @@ public class AuthService {
                     .collect(Collectors.joining(","));
 
             return String.format(
-                    "http://localhost:3000/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s",
-                    token, refreshToken, roles, email
+                    "http://localhost:3000/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s&name=%s&imageUrl=%s",
+                    token, refreshToken, roles, email, name, picture
             );
 
         } catch (Exception e) {

@@ -49,7 +49,12 @@ public class AlbumService {
     }
 
     public List<AlbumEntity> findAll() {
-        return albumRepository.findAll();
+        String userId = SecurityUtils.getCurrentUserId();
+        return albumRepository.findByUser_Id(userId);
+    }
+
+    public List<AlbumEntity> findAllByUser(String userId) {
+        return albumRepository.findByUser_Id(userId);
     }
     @Transactional
     public void addSong(AlbumSongDto albumSongDto) {
