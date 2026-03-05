@@ -44,6 +44,16 @@ public class GlobalException {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
+        ApiResponse<Object> response = ApiResponse.error(
+                HttpStatus.FORBIDDEN.value(),
+                ex.getMessage() != null ? ex.getMessage() : "Access Denied",
+                "FORBIDDEN"
+        );
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         ex.printStackTrace();

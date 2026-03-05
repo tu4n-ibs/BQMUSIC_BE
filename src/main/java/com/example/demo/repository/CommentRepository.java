@@ -8,9 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommentRepository extends JpaRepository<CommentEntity, String> {
 
-    Page<CommentEntity> findAllByParentComment_Id(String parentCommentId, Pageable pageable);
+    Page<CommentEntity> findAllByParent_Id(String parentId, Pageable pageable);
 
-    Page<CommentEntity> findAllByPost_IdAndParentCommentIsNull(String postId, Pageable pageable);
+    Page<CommentEntity> findAllByPost_IdAndParentIsNull(String postId, Pageable pageable);
 
     Long countByPost_Id(String postId);
+
+    Long countByParent_Id(String parentId);
 }

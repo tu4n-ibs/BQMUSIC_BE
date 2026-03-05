@@ -20,6 +20,6 @@ public class CommentEntity extends BaseEntity {
     private UserEntity user;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
-    private CommentEntity ParentComment;
+    private CommentEntity parent;
     private Integer depth;
 }

@@ -42,4 +42,5 @@ public class PostResponsePage {
     private String groupPostNameShare;
     private String contentShare;
     private LocalDateTime timeShare;
+    private boolean isLiked;
 }
