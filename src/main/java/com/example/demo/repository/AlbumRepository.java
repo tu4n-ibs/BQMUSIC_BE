@@ -7,5 +7,5 @@ import java.util.Collection;
 import java.util.List;
 
 public interface AlbumRepository extends JpaRepository<AlbumEntity,String> {
-    Collection<AlbumEntity> findAllByIdIn(List<String> list);
+    java.util.List<AlbumEntity> findByUser_Id(String userId);
 }

@@ -28,6 +28,11 @@ public class AlbumController {
         return ApiResponse.success(albumService.findAll());
     }
 
+    @GetMapping("/user/{userId}")
+    public ApiResponse<List<AlbumEntity>> getAlbumsByUser(@PathVariable String userId) {
+        return ApiResponse.success(albumService.findAllByUser(userId));
+    }
+
     @PostMapping("/add-new-song")
     public ApiResponse<?> addNewSong(@RequestBody AlbumSongDto albumSongDto) {
         albumService.addSong(albumSongDto);

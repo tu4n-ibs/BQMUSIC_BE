@@ -4,6 +4,7 @@ import com.example.demo.common.AppException;
 import com.example.demo.entity.*;
 import com.example.demo.model.content_dto.CreateGroupRequest;
 import com.example.demo.model.content_dto.GroupByUser;
+import com.example.demo.model.content_dto.GroupDetailResponse;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
 import com.example.demo.model.enum_object.GroupJoinStatus;
 import com.example.demo.model.enum_object.GroupRole;
@@ -50,7 +51,7 @@ public class GroupService {
         groupMemberRepository.save(adminMember);
     }
 
-    // ==================== BẬT/TẮT DUYỆT BÀI VIẾT ====================
+    @Transactional
     public void toggleRequirePostApproval(String groupId, String currentUserId) {
         GroupMemberEntity member = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId)
                 .orElseThrow(() -> new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "User is not a member of this group"));
@@ -60,11 +61,12 @@ public class GroupService {
         }
 
         GroupEntity group = member.getGroupEntity();
-        group.setRequirePostApproval(!group.getRequirePostApproval());
+        boolean currentVal = group.getRequirePostApproval() != null && group.getRequirePostApproval();
+        group.setRequirePostApproval(!currentVal);
         groupRepository.save(group);
     }
 
-    // ==================== BẬT/TẮT PRIVATE GROUP ====================
+    @Transactional
     public void togglePrivateGroup(String groupId, String currentUserId) {
         GroupMemberEntity member = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId)
                 .orElseThrow(() -> new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "User is not a member of this group"));
@@ -74,7 +76,8 @@ public class GroupService {
         }
 
         GroupEntity group = member.getGroupEntity();
-        group.setIsPrivate(!group.getIsPrivate());
+        boolean currentVal = group.getIsPrivate() != null && group.getIsPrivate();
+        group.setIsPrivate(!currentVal);
         groupRepository.save(group);
     }
 
@@ -177,6 +180,7 @@ public class GroupService {
         return groupJoinRequestEntities.stream().map(groupJoinRequestEntity -> {
             UserEntity userEntity = groupJoinRequestEntity.getUser();
             return GroupJoinRequestResponse.builder()
+                    .groupJoinRequestId(groupJoinRequestEntity.getId())
                     .userId(userEntity.getId())
                     .name(userEntity.getName())
                     .imageUrl(userEntity.getImageUrl())
@@ -279,11 +283,84 @@ public class GroupService {
                 .map(membership -> {
                     GroupEntity group = membership.getGroupEntity();
                     return GroupByUser.builder()
-                            .groupId(group.getId())
-                            .groupName(group.getName())
-                            .groupImageUrl(group.getImageUrl())
+                            .id(group.getId())
+                            .name(group.getName())
+                            .imageUrl(group.getImageUrl())
+                            .description(group.getDescription())
+                            .members(groupMemberRepository.countByGroupEntity_Id(group.getId()))
                             .build();
                 })
                 .toList();
+    }
+
+    public List<GroupByUser> getDiscoverGroups(String currentUserId) {
+        // Find all groups
+        List<GroupEntity> allGroups = groupRepository.findAll();
+        
+        // Find groups user is already in
+        List<String> joinedGroupIds = groupMemberRepository.findAllByUserEntity_Id(currentUserId)
+                .stream()
+                .map(m -> m.getGroupEntity().getId())
+                .toList();
+
+        // Filter out joined groups
+        return allGroups.stream()
+                .filter(group -> !joinedGroupIds.contains(group.getId()))
+                .map(this::mapToGroupByUser)
+                .toList();
+    }
+
+    public List<GroupByUser> getAllGroups() {
+        List<GroupEntity> groups = groupRepository.findAll();
+        return groups.stream()
+                .map(this::mapToGroupByUser)
+                .toList();
+    }
+
+    private GroupByUser mapToGroupByUser(GroupEntity group) {
+        List<String> avatars = groupMemberRepository.findTop4ByGroupEntity_IdOrderByCreatedAtDesc(group.getId())
+                .stream()
+                .map(m -> m.getUserEntity().getImageUrl())
+                .toList();
+
+        return GroupByUser.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .imageUrl(group.getImageUrl())
+                .description(group.getDescription())
+                .members(groupMemberRepository.countByGroupEntity_Id(group.getId()))
+                .memberAvatars(avatars)
+                .build();
+    }
+
+    public GroupDetailResponse getGroupDetail(String groupId) {
+        String currentUserId = com.example.demo.common.SecurityUtils.getCurrentUserId();
+        
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
+
+        long memberCount = groupMemberRepository.countByGroupEntity_Id(groupId);
+        
+        // Check membership
+        java.util.Optional<GroupMemberEntity> memberOpt = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId);
+        boolean isMember = memberOpt.isPresent();
+        String role = isMember ? memberOpt.get().getGroupRole().name() : null;
+        
+        // Check pending request
+        boolean hasPendingRequest = groupJoinRequestRepository.existsByGroup_IdAndUser_IdAndGroupJoinStatus(groupId, currentUserId, GroupJoinStatus.PENDING);
+
+        return GroupDetailResponse.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .description(group.getDescription())
+                .imageUrl(group.getImageUrl())
+                .isPrivate(group.getIsPrivate())
+                .requirePostApproval(group.getRequirePostApproval())
+                .memberCount(memberCount)
+                .createdAt(group.getCreatedAt())
+                .isMember(isMember)
+                .role(role)
+                .hasPendingRequest(hasPendingRequest)
+                .build();
     }
 }

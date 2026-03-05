@@ -16,6 +16,7 @@ public interface GroupMemberRepository extends JpaRepository<GroupMemberEntity,S
     Optional<GroupMemberEntity> findByGroupEntity_IdAndUserEntity_Id(String groupEntityId, String userEntityId);
 
     long countByGroupEntity_IdAndGroupRole(String groupEntityId, GroupRole groupRole);
-
+    long countByGroupEntity_Id(String groupEntityId);
     List<GroupMemberEntity> findAllByUserEntity_Id(String userEntityId);
+    List<GroupMemberEntity> findTop4ByGroupEntity_IdOrderByCreatedAtDesc(String groupEntityId);
 }

@@ -61,4 +61,15 @@ Lấy toàn bộ thông tin bài hát thuộc về một Playlist cụ thể.
         List<UserPlaylistResponse> responses = playlistService.getAllPlaylistsByUserId(userId);
         return ApiResponse.success(responses);
     }
+
+    @Operation(
+            summary = "Lấy danh sách playlist của người dùng hiện tại",
+            description = "Trả về danh sách các playlist của người dùng đang đăng nhập dựa trên Token."
+    )
+    @GetMapping
+    public ApiResponse<List<UserPlaylistResponse>> getMyPlaylists() {
+        String userId = com.example.demo.common.SecurityUtils.getCurrentUserId();
+        List<UserPlaylistResponse> responses = playlistService.getAllPlaylistsByUserId(userId);
+        return ApiResponse.success(responses);
+    }
 }

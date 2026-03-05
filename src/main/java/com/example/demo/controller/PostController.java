@@ -88,10 +88,11 @@ Dữ liệu trả về dưới dạng Page để tối ưu hiệu năng.
     @GetMapping("/user/{userId}")
     public ApiResponse<Page<PostResponsePage>> getAllPostsByUser(
             @PathVariable String userId,
+            @RequestParam(required = false) com.example.demo.model.enum_object.PostType postType,
             @ParameterObject Pageable pageable
     ) {
         // Gọi service xử lý logic lấy post và map song/album
-        Page<PostResponsePage> posts = postService.findAllPostByUser(userId, pageable);
+        Page<PostResponsePage> posts = postService.findAllPostByUser(userId, postType, pageable);
 
         return ApiResponse.success(posts);
     }
@@ -116,5 +117,29 @@ Lấy toàn bộ bài viết đã được duyệt (`APPROVED`) trong một nhó
         Page<PostResponsePage> posts = postService.findAllPostByGroup(groupId, pageable);
 
         return ApiResponse.success(posts);
+    }
+    @GetMapping("group/{groupId}/pending")
+    @Operation(
+            summary = "Lấy danh sách bài viết đang chờ duyệt trong nhóm (Admin only)",
+            description = "Lấy các bài viết có trạng thái PENDING trong nhóm. Chỉ Admin mới có quyền truy cập."
+    )
+    public ApiResponse<Page<PostResponsePage>> getPendingPostsByGroup(
+            @PathVariable String groupId,
+            @ParameterObject Pageable pageable
+    ) {
+        return ApiResponse.success(postService.getPendingPostsByGroup(groupId, pageable));
+    }
+
+    @PostMapping("post/{postId}/review")
+    @Operation(
+            summary = "Duyệt hoặc từ chối bài viết (Admin only)",
+            description = "Admin duyệt (approve=true) hoặc từ chối (approve=false) bài viết trong nhóm."
+    )
+    public ApiResponse<?> reviewPost(
+            @PathVariable String postId,
+            @RequestParam boolean approve
+    ) {
+        postService.reviewPost(postId, approve);
+        return ApiResponse.success(null);
     }
 }

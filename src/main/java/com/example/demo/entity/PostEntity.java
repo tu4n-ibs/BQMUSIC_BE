@@ -38,5 +38,6 @@ public class PostEntity extends BaseEntity {
 
     private String targetId;
 
+    @Enumerated(EnumType.ORDINAL)
     private ApprovalStatus approvalStatus;
 }
