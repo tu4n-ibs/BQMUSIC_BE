@@ -6,12 +6,7 @@ import lombok.*;
 
 @Entity
 @Table(
-        name = "play_history",
-        indexes = {
-                @Index(name = "idx_play_history_user", columnList = "user_id"),
-                @Index(name = "idx_play_history_song", columnList = "song_id"),
-                @Index(name = "idx_play_history_played_at", columnList = "played_at")
-        }
+        name = "play_history"
 )
 @Getter
 @Setter

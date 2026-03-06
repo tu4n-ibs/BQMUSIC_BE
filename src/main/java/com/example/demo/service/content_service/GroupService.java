@@ -24,6 +24,7 @@ public class GroupService {
     private final GroupBanRepository groupBanRepository;
     private final GroupJoinRequestRepository groupJoinRequestRepository;
     private final UserRepository userRepository;
+    private final NewsfeedService newsfeedService;
 
     // ==================== TẠO GROUP ====================
     @Transactional
@@ -110,6 +111,7 @@ public class GroupService {
                     .groupRole(GroupRole.MEMBER)
                     .build();
             groupMemberRepository.save(newMember);
+            newsfeedService.invalidateNewsfeedCache(currentUserId);
             return;
         }
 
@@ -159,6 +161,7 @@ public class GroupService {
                     .build();
 
             groupMemberRepository.save(newMember);
+            newsfeedService.invalidateNewsfeedCache(joinRequest.getUser().getId());
         } else {
             joinRequest.setGroupJoinStatus(GroupJoinStatus.REJECTED);
         }
@@ -199,7 +202,10 @@ public class GroupService {
                 throw new AppException(HttpStatus.BAD_REQUEST, "GROUP_BR_004", "Admin duy nhất không thể rời nhóm. Hãy chỉ định admin mới hoặc giải tán nhóm.");
             }
         }
+
         groupMemberRepository.delete(member);
+        newsfeedService.invalidateNewsfeedCache(currentUserId);
+
     }
     // ==================== QUẢN LÝ BAN (CHẶN) ====================
 

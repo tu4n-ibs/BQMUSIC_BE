@@ -10,6 +10,7 @@ import com.example.demo.repository.UserRepository;
 import com.example.demo.model.enum_object.PostType;
 import com.example.demo.model.enum_object.ContextType;
 import com.example.demo.model.enum_object.ApprovalStatus;
+import com.example.demo.service.content_service.NewsfeedService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class UserFollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final PostRepository postRepository;
+    private final NewsfeedService newsfeedService;
 
     @Transactional
     public void followUser(String followerId, String followingId) {
@@ -46,6 +48,7 @@ public class UserFollowService {
         userFollow.setFollowing(following);
 
         userFollowRepository.save(userFollow);
+        newsfeedService.invalidateNewsfeedCache(followerId);
     }
 
     @Transactional
@@ -61,6 +64,7 @@ public class UserFollowService {
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "FOLLOW_RELATION_NF", "Relationship not found (You haven't followed this user yet)"));
 
         userFollowRepository.delete(userFollow);
+        newsfeedService.invalidateNewsfeedCache(followerId);
     }
     public UserProfileStatsResponse getProfileStats(String targetUserId, String currentUserId) {
         // 1. Kiểm tra user có tồn tại không

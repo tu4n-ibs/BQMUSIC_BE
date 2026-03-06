@@ -29,6 +29,7 @@ public class PostService {
     private final GroupMemberRepository groupMemberRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final NewsfeedService newsfeedService;
 
     public void userCreateNewPost(CreatePostRequest createPostRequest) {
         String userId = SecurityUtils.getCurrentUserId();
@@ -46,6 +47,7 @@ public class PostService {
                 .approvalStatus(ApprovalStatus.APPROVED)
                 .build();
         postRepository.save(postEntity);
+
     }
     private void validateTargetExists(TargetType targetType, String targetId, String userId) {
         if (targetType == null || targetId == null) return;

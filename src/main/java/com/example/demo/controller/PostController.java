@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.*;
+import com.example.demo.service.content_service.NewsfeedService;
 import com.example.demo.service.content_service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final NewsfeedService newsfeedService;
     @PostMapping
     public ApiResponse<?> save(@RequestBody CreatePostRequest createPostRequest) {
         postService.userCreateNewPost(createPostRequest);
@@ -140,5 +144,11 @@ Lấy toàn bộ bài viết đã được duyệt (`APPROVED`) trong một nhó
     ) {
         postService.reviewPost(postId, approve);
         return ApiResponse.success(null);
+    }
+
+    @GetMapping("new-feed")
+    public ApiResponse<Slice<PostResponsePage>> getNewPosts(@ParameterObject Pageable pageable) {
+        String currenUserId= SecurityUtils.getCurrentUserId();
+        return ApiResponse.success(newsfeedService.getPersonalizedNewsfeed(currenUserId, pageable));
     }
 }
