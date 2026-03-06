@@ -93,7 +93,6 @@ public class SongService {
                 .name(song.getName())
                 .artistName(song.getUser() != null ? song.getUser().getName() : null)
                 .genreName(song.getGenre() != null ? song.getGenre().getName() : null)
-                .musicUrl(song.getMusicUrl())
                 .imageUrl(song.getImageUrl())
                 .duration(song.getDuration())
                 .playCount(song.getPlayCount())
@@ -117,5 +116,13 @@ public class SongService {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    public SongResponse getSongById(String songId) {
+        SongEntity song = songRepository.findById(songId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "SONG_001", "Cannot find song"));
+        SongResponse response = convertToResponse(song);
+        response.setMusicUrl(song.getMusicUrl());
+        return response;
     }
 }
