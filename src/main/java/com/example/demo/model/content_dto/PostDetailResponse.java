@@ -35,7 +35,7 @@ public class PostDetailResponse {
     private String songImgUrl;
     private String songName;
     private String songUrl;
-    private int songView;
+    private Integer playCount;
     private long likeCount;
     private long commentCount;
     private boolean isLiked;

@@ -127,6 +127,7 @@ public class PlaylistService {
             return UserPlaylistResponse.builder()
                     .playlistId(playlist.getId())
                     .playlistName(playlist.getName())
+                    .description(playlist.getDescription())
                     .songCount(count)
                     .createdAt(playlist.getCreatedAt())
                     .build();
