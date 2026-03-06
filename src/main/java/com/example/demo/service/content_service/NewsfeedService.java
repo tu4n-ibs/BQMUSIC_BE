@@ -258,7 +258,11 @@ public class NewsfeedService {
 
         if (post.getContextType() == ContextType.GROUP) {
             GroupEntity group = groupMap.get(post.getContextTypeId());
-            if (group != null) { res.setGroupId(group.getId()); res.setGroupName(group.getName()); }
+            if (group != null) { 
+                res.setGroupId(group.getId()); 
+                res.setGroupName(group.getName()); 
+                res.setGroupImage(group.getImageUrl());
+            }
         }
 
         if (post.getPostType() == PostType.OWNER) {
@@ -292,12 +296,15 @@ public class NewsfeedService {
             SongEntity song = songMap.get(id);
             if (song != null) {
                 res.setIdSong(song.getId()); res.setNameSong(song.getName());
+                res.setImageUrlSong(song.getImageUrl());
+                res.setPlayCount(song.getPlayCount());
             }
         } else if (type == TargetType.ALBUM) {
             AlbumEntity album = albumMap.get(id);
             if (album != null) {
                 res.setIdAlbum(album.getId()); res.setNameAlbum(album.getName());
                 res.setImageUrlAlbum(album.getImageUrl());
+                res.setPlayCount(0);
             }
         }
     }

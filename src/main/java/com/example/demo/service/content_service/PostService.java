@@ -195,7 +195,7 @@ public class PostService {
             songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.songName(song.getName())
                     .songImgUrl(song.getImageUrl())
                     .songUrl(song.getMusicUrl())
-                    .songView(song.getPlayCount() != null ? song.getPlayCount() : 0));
+                    .playCount(song.getPlayCount() != null ? song.getPlayCount() : 0));
         } else if (TargetType.ALBUM.equals(contentPost.getTargetType())) {
             // Giả sử bạn đã inject AlbumRepository
             albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> {
@@ -207,7 +207,8 @@ public class PostService {
                         .map(as -> AlbumResponseForPost.SongResponseAlbum.builder()
                                 .songId(as.getSongEntity().getId())
                                 .name(as.getSongEntity().getName())
-                                .duration((as.getSongEntity().getDuration())) // Hàm format bên dưới
+                                .duration((as.getSongEntity().getDuration()))
+                                .playCount(as.getSongEntity().getPlayCount() != null ? as.getSongEntity().getPlayCount() : 0)
                                 .build())
                         .collect(Collectors.toList());
 
@@ -324,6 +325,7 @@ public class PostService {
                 groupRepository.findById(post.getContextTypeId()).ifPresent(group -> {
                     builder.groupId(group.getId());
                     builder.groupName(group.getName());
+                    builder.groupImage(group.getImageUrl());
                 });
             }
 
@@ -350,14 +352,16 @@ public class PostService {
             if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                         .imageUrlSong(song.getImageUrl())
-                        .nameSong(song.getName()));
+                        .nameSong(song.getName())
+                        .playCount(song.getPlayCount()));
             }
 
             // Target: ALBUM
             if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
                         .imageUrlAlbum(album.getImageUrl())
-                        .nameAlbum(album.getName()));
+                        .nameAlbum(album.getName())
+                        .playCount(0));
             }
 
             return builder.build();
@@ -426,14 +430,16 @@ public class PostService {
             if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                         .imageUrlSong(song.getImageUrl())
-                        .nameSong(song.getName()));
+                        .nameSong(song.getName())
+                        .playCount(song.getPlayCount()));
             }
 
             // Target: ALBUM
             if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
                         .imageUrlAlbum(album.getImageUrl())
-                        .nameAlbum(album.getName()));
+                        .nameAlbum(album.getName())
+                        .playCount(0));
             }
 
             return builder.build();
@@ -540,13 +546,15 @@ public class PostService {
         if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
             songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                     .imageUrlSong(song.getImageUrl())
-                    .nameSong(song.getName()));
+                    .nameSong(song.getName())
+                    .playCount(song.getPlayCount()));
         }
 
         if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
             albumRepository.findById(contentPost.getTargetId()).ifPresent(album -> builder.idAlbum(album.getId())
                     .imageUrlAlbum(album.getImageUrl())
-                    .nameAlbum(album.getName()));
+                    .nameAlbum(album.getName())
+                    .playCount(0));
         }
 
         return builder.build();
