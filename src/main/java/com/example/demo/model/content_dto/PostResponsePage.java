@@ -27,6 +27,7 @@ public class PostResponsePage {
     private String idSong;
     private String imageUrlSong;
     private String nameSong;
+    private Integer playCount;
     private PostType postType; //    SHARE, OWNER
     private ContextType contextType; //GROUP, PROFILE
     private Visibility visibility; //     PRIVATE,PUBLIC;
@@ -36,6 +37,7 @@ public class PostResponsePage {
     private String nameAlbum;
     private String groupId;
     private String groupName;
+    private String groupImage;
     private String userIdShare;
     private String userNameShare;
     private String userImageShare;

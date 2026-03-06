@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class UserPlaylistResponse {
     private String playlistId;
     private String playlistName;
-    private String imageUrl; // Ảnh đại diện playlist (thường lấy của bài hát đầu tiên hoặc ảnh riêng)
+    private String description;
     private long songCount;
     private LocalDateTime createdAt;
 }
