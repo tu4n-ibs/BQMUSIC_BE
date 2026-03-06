@@ -208,7 +208,6 @@ public class PostService {
                                 .songId(as.getSongEntity().getId())
                                 .name(as.getSongEntity().getName())
                                 .duration((as.getSongEntity().getDuration())) // Hàm format bên dưới
-                                .musicUrl(as.getSongEntity().getMusicUrl())
                                 .build())
                         .collect(Collectors.toList());
 
@@ -427,8 +426,7 @@ public class PostService {
             if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
                 songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                         .imageUrlSong(song.getImageUrl())
-                        .nameSong(song.getName())
-                        .musicLink(song.getMusicUrl()));
+                        .nameSong(song.getName()));
             }
 
             // Target: ALBUM
@@ -542,8 +540,7 @@ public class PostService {
         if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
             songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
                     .imageUrlSong(song.getImageUrl())
-                    .nameSong(song.getName())
-                    .musicLink(song.getMusicUrl()));
+                    .nameSong(song.getName()));
         }
 
         if (TargetType.ALBUM.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
