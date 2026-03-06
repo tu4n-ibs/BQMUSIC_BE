@@ -28,7 +28,7 @@ public class PostDetailResponse {
     private String groupPostNameShare;
     private String contentShare;
     private LocalDateTime timeShare;
-    private Visibility visibility; //     FRIEND,PRIVATE,PUBLIC;
+    private Visibility visibility; //     PRIVATE,PUBLIC;
     private TargetType targetType; //    SONG,ALBUM
     private String targetId;
     private AlbumResponseForPost postResponse;

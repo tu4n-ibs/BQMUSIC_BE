@@ -30,7 +30,7 @@ public class PostResponsePage {
     private String musicLink;
     private PostType postType; //    SHARE, OWNER
     private ContextType contextType; //GROUP, PROFILE
-    private Visibility visibility; //     FRIEND,PRIVATE,PUBLIC;
+    private Visibility visibility; //     PRIVATE,PUBLIC;
     private TargetType targetType; //    SONG,ALBUM
     private String idAlbum;
     private String imageUrlAlbum;

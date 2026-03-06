@@ -206,6 +206,7 @@ public class PostService {
                                 .songId(as.getSongEntity().getId())
                                 .name(as.getSongEntity().getName())
                                 .duration((as.getSongEntity().getDuration())) // Hàm format bên dưới
+                                .musicUrl(as.getSongEntity().getMusicUrl())
                                 .build())
                         .collect(Collectors.toList());
 
