@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -172,10 +174,10 @@ public class AuthService {
             String roles = user.getRoles().stream()
                     .map(RoleEntity::getName)
                     .collect(Collectors.joining(","));
-
+            String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
             return String.format(
                     "http://localhost:3000/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s&name=%s&imageUrl=%s",
-                    token, refreshToken, roles, email, name, picture
+                    token, refreshToken, roles, email, encodedName, picture
             );
 
         } catch (Exception e) {

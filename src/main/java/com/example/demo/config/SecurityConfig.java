@@ -36,7 +36,8 @@ public class SecurityConfig {
             "/favicon.ico",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/.well-known/appspecific/com.chrome.devtools.json"
     };
 
     @Bean
