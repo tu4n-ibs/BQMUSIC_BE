@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.entity.AlbumEntity;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
+import com.example.demo.model.content_dto.AlbumResponseDetail;
 import com.example.demo.model.content_dto.AlbumSongDto;
 import com.example.demo.service.content_service.AlbumService;
 import lombok.RequiredArgsConstructor;
@@ -43,5 +44,9 @@ public class AlbumController {
     public ApiResponse<?> updateImage(@RequestParam MultipartFile file, @RequestParam String albumId) {
         albumService.updateImageAlbum(file, albumId);
         return ApiResponse.success(null);
+    }
+    @GetMapping("songs/{albumId}")
+    public ApiResponse<AlbumResponseDetail> getSong(@PathVariable String albumId) {
+        return ApiResponse.success(albumService.getAlbumDetail(albumId));
     }
 }

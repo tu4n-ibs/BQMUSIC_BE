@@ -7,6 +7,7 @@ import com.example.demo.entity.AlbumSongEntity;
 import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
+import com.example.demo.model.content_dto.AlbumResponseDetail;
 import com.example.demo.model.content_dto.AlbumSongDto;
 import com.example.demo.model.enum_object.Status;
 import com.example.demo.repository.AlbumRepository;
@@ -126,5 +127,42 @@ public class AlbumService {
         albumEntity.setImageUrl(fileName);
 
         albumRepository.save(albumEntity);
+    }
+    public AlbumResponseDetail getAlbumDetail(String albumId) {
+        // 1. Tìm kiếm Album theo ID, ném lỗi nếu không tồn tại
+        AlbumEntity albumEntity = albumRepository.findById(albumId)
+                .orElseThrow(() -> new AppException(
+                        HttpStatus.NOT_FOUND,
+                        "ALBUM_001",
+                        "Cannot found this album"
+                ));
+
+        List<AlbumSongEntity> albumSongs = albumSongRepository.findByAlbumEntity_Id(albumId);
+
+        // 3. Map danh sách các Entity bài hát sang chuẩn Response DTO
+        List<AlbumResponseDetail.SongResponseFromAlbum> songResponses = albumSongs.stream()
+                .map(albumSong -> {
+                    SongEntity song = albumSong.getSongEntity();
+                    return AlbumResponseDetail.SongResponseFromAlbum.builder()
+                            .songId(song.getId())
+                            .songName(song.getName())
+                            .songImageUrl(song.getImageUrl())
+                            .duration(song.getDuration()) // Giả định có getter getDuration()
+                            .build();
+                })
+                .toList(); // Ghi chú: Sử dụng .collect(Collectors.toList()) nếu bạn đang dùng Java version <= 15
+
+        // 4. Khởi tạo và trả về đối tượng AlbumResponseDetail tổng
+        // Ghi chú: Giả định ở class AlbumResponseDetail bạn có dùng @Data, @Setter hoặc @Builder
+        AlbumResponseDetail responseDetail = new AlbumResponseDetail();
+        responseDetail.setName(albumEntity.getName());
+        responseDetail.setDescription(albumEntity.getDescription());
+        responseDetail.setImageUrl(albumEntity.getImageUrl());
+
+        // Gán albumImageUrl (có thể giống imageUrl tùy vào logic dự án của bạn)
+        responseDetail.setAlbumImageUrl(albumEntity.getImageUrl());
+        responseDetail.setSongs(songResponses);
+
+        return responseDetail;
     }
 }
