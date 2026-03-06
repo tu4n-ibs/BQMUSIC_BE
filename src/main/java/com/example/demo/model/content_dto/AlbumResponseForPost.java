@@ -17,5 +17,6 @@ public class AlbumResponseForPost {
         private String songId;
         private String name;
         private Integer duration;
+        private String musicUrl;
     }
 }

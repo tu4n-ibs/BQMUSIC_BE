@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
-
     @PostMapping
     public ApiResponse<?> save(@RequestBody CreatePostRequest createPostRequest) {
         postService.userCreateNewPost(createPostRequest);
