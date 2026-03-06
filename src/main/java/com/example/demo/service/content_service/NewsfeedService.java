@@ -103,10 +103,13 @@ public class NewsfeedService {
         return ranked;
     }
 
+    private static final int FALLBACK_FETCH_LIMIT = 50;
+
     private List<String> buildRankedPostIds(String userId) {
         Pageable sourcePage = PageRequest.of(0, FETCH_PER_SOURCE);
 
-        List<String> followingIds = userFollowRepository.findUserFollowByFollower_Id(userId).stream().map(UserFollowEntity::getId).toList();
+        List<String> followingIds = userFollowRepository.findUserFollowByFollower_Id(userId)
+                .stream().map(f -> f.getFollowing().getId()).toList();
         List<String> groupIds     = groupMemberRepository.findGroupIdsByUserId(userId);
         List<String> topGenreIds  = fetchTopGenreIds(userId);
 
@@ -115,8 +118,7 @@ public class NewsfeedService {
         if (!followingIds.isEmpty()) {
             mergeIntoMap(scoreMap,
                     postRepository.findPostsByFollowings(
-                            followingIds,
-                            List.of(Visibility.PUBLIC),
+                            followingIds, List.of(Visibility.PUBLIC),
                             ApprovalStatus.APPROVED, sourcePage),
                     ScoredPost.WEIGHT_FOLLOWING);
         }
@@ -137,6 +139,12 @@ public class NewsfeedService {
                     ScoredPost.WEIGHT_GENRE);
         }
 
+        // ── Fallback: user mới / chưa có dữ liệu cá nhân hóa ─────────────────
+        if (scoreMap.isEmpty()) {
+            log.debug("[Newsfeed] No personalized data for userId={} → using trending fallback", userId);
+            return buildFallbackPostIds();
+        }
+
         return scoreMap.values().stream()
                 .peek(ScoredPost::applyRecencyBonus)
                 .sorted(Comparator.comparingDouble(ScoredPost::getScore).reversed())
@@ -144,9 +152,18 @@ public class NewsfeedService {
                 .collect(Collectors.toList());
     }
 
-    // =========================================================================
-    //  PRIVATE — SCORING HELPERS
-    // =========================================================================
+    private List<String> buildFallbackPostIds() {
+        Pageable fallbackPage = PageRequest.of(0, FALLBACK_FETCH_LIMIT);
+
+        // Lấy các bài PUBLIC + APPROVED mới nhất, sort by createdAt DESC
+        return postRepository.findTrendingPublicPosts(
+                        Visibility.PUBLIC,
+                        ApprovalStatus.APPROVED,
+                        fallbackPage)
+                .stream()
+                .map(PostEntity::getId)
+                .collect(Collectors.toList());
+    }
 
     private void mergeIntoMap(Map<String, ScoredPost> map, List<PostEntity> posts, double weight) {
         for (PostEntity post : posts) {
@@ -163,10 +180,6 @@ public class NewsfeedService {
                 .findTopGenreIdsByUserId(userId, PageRequest.of(0, TOP_GENRE_LIMIT))
                 .stream().map(row -> (String) row[0]).collect(Collectors.toList());
     }
-
-    // =========================================================================
-    //  PRIVATE — BATCH LOADING
-    // =========================================================================
 
     private Map<String, Long> batchCountLikes(List<String> postIds) {
         return likeRepository.countLikesByPostIds(postIds).stream()
