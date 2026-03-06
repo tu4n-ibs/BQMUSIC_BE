@@ -76,7 +76,6 @@ public class NewsfeedService {
         Map<String, AlbumEntity> albumMap = batchLoadAlbums(pagePosts);
         Map<String, GroupEntity> groupMap = batchLoadGroups(pagePosts);
 
-        // ── Step 5: Map sang response ──────────────────────────────────────────
         List<PostResponsePage> result = pagePosts.stream()
                 .map(post -> mapToResponse(post, likeCountMap, commentCountMap,
                         likedPostIds, songMap, albumMap, groupMap))

@@ -3,28 +3,35 @@ package com.example.demo.service.content_service;
 import com.example.demo.common.AppException;
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.entity.GenreEntity;
+import com.example.demo.entity.PlayHistoryEntity;
 import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.CreateSongRequest;
 import com.example.demo.model.content_dto.SongResponse;
+import com.example.demo.model.content_dto.TopSongResponse;
+import com.example.demo.model.enum_object.ChartPeriod;
 import com.example.demo.model.enum_object.Status;
 import com.example.demo.repository.GenreRepository;
+import com.example.demo.repository.PlayHistoryRepository;
 import com.example.demo.repository.SongRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CloudinaryServiceForImage;
 import com.example.demo.service.CloudinaryServiceForMusic;
 import com.example.demo.specification.SongSpecification;
 import com.mpatric.mp3agic.Mp3File;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -36,6 +43,7 @@ public class SongService {
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
     private final UserRepository userRepository;
     private final GenreRepository genreRepository;
+    private final PlayHistoryRepository playHistoryRepository;
 
     public void updateImage(MultipartFile file, String SongId) {
         SongEntity songEntity = songRepository.findById(SongId)
@@ -117,12 +125,69 @@ public class SongService {
             return 0;
         }
     }
-
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public SongResponse getSongById(String songId) {
         SongEntity song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "SONG_001", "Cannot find song"));
         SongResponse response = convertToResponse(song);
         response.setMusicUrl(song.getMusicUrl());
         return response;
+    }
+    @Transactional
+    public void recordPlay(String songId, String userId,Integer duration) {
+        int updated = songRepository.incrementPlayCount(songId);
+        if (updated == 0) {
+            throw new AppException(HttpStatus.NOT_FOUND, "SONG_001", "Cannot find song");
+        }
+
+        // 2. Lưu history cho chart theo thời gian
+        SongEntity  song    = songRepository.getReferenceById(songId);
+        UserEntity  user    = userRepository.getReferenceById(userId);
+
+        PlayHistoryEntity history = new PlayHistoryEntity();
+        history.setSong(song);
+        history.setUser(user);
+        history.setDurationPlayed(duration);
+        history.setPlayedAt(LocalDateTime.now());
+        playHistoryRepository.save(history);
+    }
+    public Slice<TopSongResponse> getTopSongs(ChartPeriod period, String genreId, Pageable pageable) {
+        LocalDateTime from = period.fromDate();
+
+        // Fetch thêm 1 phần tử để detect hasNext
+        Pageable fetchPage = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize() + 1
+        );
+
+        List<Object[]> rows = playHistoryRepository.findTopSongs(genreId, from, fetchPage);
+
+        boolean hasNext = rows.size() > pageable.getPageSize();
+        if (hasNext) rows = rows.subList(0, pageable.getPageSize());
+
+        // Tính rank tuyệt đối (không reset về 1 ở mỗi page)
+        int baseRank = pageable.getPageNumber() * pageable.getPageSize();
+
+        List<TopSongResponse> result = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) {
+            SongEntity song = (SongEntity) rows.get(i)[0];
+            long       cnt  = (Long)       rows.get(i)[1];
+
+            result.add(TopSongResponse.builder()
+                    .rank(baseRank + i + 1)
+                    .songId(song.getId())
+                    .songName(song.getName())
+                    .imageUrl(song.getImageUrl())
+                    .musicUrl(song.getMusicUrl())
+                    .artistId  (song.getUser()  != null ? song.getUser().getId()    : null)
+                    .artistName(song.getUser()  != null ? song.getUser().getName()  : null)
+                    .genreId   (song.getGenre() != null ? song.getGenre().getId()   : null)
+                    .genreName (song.getGenre() != null ? song.getGenre().getName() : null)
+                    .duration(song.getDuration())
+                    .playCount(cnt)
+                    .build());
+        }
+
+        return new SliceImpl<>(result, pageable, hasNext);
     }
 }

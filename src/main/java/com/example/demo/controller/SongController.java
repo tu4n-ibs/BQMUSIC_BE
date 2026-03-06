@@ -1,13 +1,17 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.CreateSongRequest;
 import com.example.demo.model.content_dto.SongResponse;
+import com.example.demo.model.content_dto.TopSongResponse;
+import com.example.demo.model.enum_object.ChartPeriod;
 import com.example.demo.service.content_service.SongService;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,5 +44,22 @@ public class SongController {
     public ApiResponse<SongResponse> getSongById(@PathVariable String songId) {
         SongResponse result = songService.getSongById(songId);
         return ApiResponse.success(result, "Lấy thông tin bài hát thành công");
+    }
+    @PostMapping("/{songId}/play")
+    public ApiResponse<Void> recordPlay(@PathVariable String songId,
+                                        @RequestParam Integer durationPlayed) {
+        String userId = SecurityUtils.getCurrentUserId();
+        songService.recordPlay(songId, userId, durationPlayed);
+        return ApiResponse.success(null,"Success");
+    }
+
+    @GetMapping("/top-songs")
+    public ApiResponse<Slice<TopSongResponse>> getTopSongs(
+            @RequestParam(defaultValue = "ALL_TIME") ChartPeriod period,
+            @RequestParam(required = false) String genreId,
+            @ParameterObject Pageable pageable
+    ) {
+        Slice<TopSongResponse> topSongs = songService.getTopSongs(period, genreId, pageable);
+        return ApiResponse.success(topSongs);
     }
 }

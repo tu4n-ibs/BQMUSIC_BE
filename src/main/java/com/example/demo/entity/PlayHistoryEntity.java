@@ -4,6 +4,8 @@ import com.example.demo.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(
         name = "play_history"
@@ -25,4 +27,6 @@ public class PlayHistoryEntity extends BaseEntity {
 
     @Column(name = "duration_played")
     private Integer durationPlayed;
+
+    private LocalDateTime playedAt;
 }
