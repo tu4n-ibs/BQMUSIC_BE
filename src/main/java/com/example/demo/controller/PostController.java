@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.*;
+import com.example.demo.model.enum_object.TypeSearch;
 import com.example.demo.service.content_service.NewsfeedService;
 import com.example.demo.service.content_service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -150,5 +151,16 @@ Lấy toàn bộ bài viết đã được duyệt (`APPROVED`) trong một nhó
     public ApiResponse<Slice<PostResponsePage>> getNewPosts(@ParameterObject Pageable pageable) {
         String currenUserId= SecurityUtils.getCurrentUserId();
         return ApiResponse.success(newsfeedService.getPersonalizedNewsfeed(currenUserId, pageable));
+    }    @Operation(
+            description = "để default thì là SONG"
+    )
+    @GetMapping("/search")
+    public ApiResponse<Slice<?>> globalSearch(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "SONG") TypeSearch type,
+            @ParameterObject Pageable pageable
+    ) {
+        Slice<?> results = newsfeedService.search(keyword, type, pageable);
+        return ApiResponse.success(results);
     }
 }

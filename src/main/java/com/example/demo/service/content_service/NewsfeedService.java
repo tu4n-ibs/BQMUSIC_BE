@@ -1,8 +1,7 @@
 package com.example.demo.service.content_service;
 
 import com.example.demo.entity.*;
-import com.example.demo.model.content_dto.PostResponsePage;
-import com.example.demo.model.content_dto.ScoredPost;
+import com.example.demo.model.content_dto.*;
 import com.example.demo.model.enum_object.*;
 import com.example.demo.repository.*;
 import com.example.demo.repository.redis.RedisNewsfeedRepository;
@@ -34,6 +33,7 @@ public class NewsfeedService {
 
     private static final int TOP_GENRE_LIMIT  = 5;
     private static final int FETCH_PER_SOURCE = 50;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Slice<PostResponsePage> getPersonalizedNewsfeed(String currentUserId, Pageable pageable) {
@@ -219,10 +219,6 @@ public class NewsfeedService {
         return new ArrayList<>(ids);
     }
 
-    // =========================================================================
-    //  PRIVATE — MAPPING
-    // =========================================================================
-
     private PostResponsePage mapToResponse(PostEntity post,
                                            Map<String, Long> likeCountMap,
                                            Map<String, Long> commentCountMap,
@@ -284,7 +280,6 @@ public class NewsfeedService {
             SongEntity song = songMap.get(id);
             if (song != null) {
                 res.setIdSong(song.getId()); res.setNameSong(song.getName());
-                res.setImageUrlSong(song.getImageUrl()); res.setMusicLink(song.getMusicUrl());
             }
         } else if (type == TargetType.ALBUM) {
             AlbumEntity album = albumMap.get(id);
@@ -293,5 +288,25 @@ public class NewsfeedService {
                 res.setImageUrlAlbum(album.getImageUrl());
             }
         }
+    }
+
+    public Slice<?> search(String keyword, TypeSearch type, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return new SliceImpl<>(Collections.emptyList(), pageable, false);
+        }
+
+        return switch (type.name()) {
+            case "USER" -> userRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                    .map(UserDTO::fromEntity); // Đã hoàn thiện case này
+
+            case "ALBUM" -> albumRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                    .map(AlbumDTO::fromEntity);
+
+            case "GROUP" -> groupRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                    .map(GroupDTO::fromEntity);
+
+            default -> songRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                    .map(SongDTO::fromEntity);
+        };
     }
 }

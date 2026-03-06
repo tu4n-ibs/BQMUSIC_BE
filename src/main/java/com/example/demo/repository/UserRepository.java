@@ -3,6 +3,7 @@ package com.example.demo.repository;
 import com.example.demo.entity.RoleEntity;
 import com.example.demo.entity.UserEntity;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -23,4 +24,6 @@ public interface UserRepository extends JpaRepository<UserEntity, String> {
     boolean existsByEmail(String email);
 
     boolean existsByRoles(Set<RoleEntity> roles);
+
+    Slice<UserEntity> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
 }
