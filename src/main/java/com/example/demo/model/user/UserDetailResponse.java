@@ -13,4 +13,5 @@ public class UserDetailResponse {
     private String id;
     private String name;
     private String imageUrl;
+    private String email;
 }

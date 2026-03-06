@@ -36,4 +36,9 @@ public class SongController {
         return ApiResponse.success(null,"Success");
     }
 
+    @GetMapping("/{songId}")
+    public ApiResponse<SongResponse> getSongById(@PathVariable String songId) {
+        SongResponse result = songService.getSongById(songId);
+        return ApiResponse.success(result, "Lấy thông tin bài hát thành công");
+    }
 }

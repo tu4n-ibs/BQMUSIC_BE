@@ -261,6 +261,6 @@ public class UserService {
 
     public UserDetailResponse getUserDetail(String id) {
         UserEntity user = userRepository.findById(id).orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
-        return new UserDetailResponse(user.getId(), user.getName(), user.getImageUrl());
+        return new UserDetailResponse(user.getId(), user.getName(), user.getImageUrl(), user.getEmail());
     }
 }
