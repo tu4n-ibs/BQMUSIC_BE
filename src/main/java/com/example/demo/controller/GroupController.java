@@ -45,8 +45,7 @@ public class GroupController {
             @RequestBody @Valid CreateGroupRequest request
            ) {
         String currentUserId = SecurityUtils.getCurrentUserId();
-        groupService.createGroup(request, currentUserId);
-        return ApiResponse.success(null);
+        return ApiResponse.success(groupService.createGroup(request, currentUserId));
     }
 
     @PatchMapping("/{groupId}/toggle-post-approval")

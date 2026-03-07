@@ -28,7 +28,7 @@ public class GroupService {
 
     // ==================== TẠO GROUP ====================
     @Transactional
-    public void createGroup(CreateGroupRequest request, String currentUserId) {
+    public String createGroup(CreateGroupRequest request, String currentUserId) {
         UserEntity creator = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
 
@@ -49,7 +49,7 @@ public class GroupService {
                 .groupRole(GroupRole.ADMIN)
                 .build();
 
-        groupMemberRepository.save(adminMember);
+        return groupMemberRepository.save(adminMember).getId();
     }
 
     @Transactional
