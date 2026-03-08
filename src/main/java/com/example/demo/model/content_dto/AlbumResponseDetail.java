@@ -15,6 +15,9 @@ public class AlbumResponseDetail {
     private String name;
     private String imageUrl;
     private String description;
+    private String nameUser;
+    private String userId;
+    private java.time.LocalDateTime createdAt;
     private List<SongResponseFromAlbum> songs;
 
     @Data

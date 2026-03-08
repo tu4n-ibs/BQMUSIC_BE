@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.entity.AlbumEntity;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
+import com.example.demo.model.content_dto.AlbumListResponse;
 import com.example.demo.model.content_dto.AlbumResponseDetail;
 import com.example.demo.model.content_dto.AlbumSongDto;
 import com.example.demo.service.content_service.AlbumService;
@@ -25,12 +26,12 @@ public class AlbumController {
     }
 
     @GetMapping
-    public ApiResponse<List<AlbumEntity>> getAlbums() {
+    public ApiResponse<List<AlbumListResponse>> getAlbums() {
         return ApiResponse.success(albumService.findAll());
     }
 
     @GetMapping("/user/{userId}")
-    public ApiResponse<List<AlbumEntity>> getAlbumsByUser(@PathVariable String userId) {
+    public ApiResponse<List<AlbumListResponse>> getAlbumsByUser(@PathVariable String userId) {
         return ApiResponse.success(albumService.findAllByUser(userId));
     }
 

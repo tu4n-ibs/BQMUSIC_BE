@@ -15,4 +15,6 @@ public interface AlbumSongRepository extends JpaRepository<AlbumSongEntity,Strin
     boolean existsBySongEntity(SongEntity songEntity);
 
     List<AlbumSongEntity> findByAlbumEntity_Id(String albumEntityId);
+
+    long countByAlbumEntity_Id(String albumId);
 }

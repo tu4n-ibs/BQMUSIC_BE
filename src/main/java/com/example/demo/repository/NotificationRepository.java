@@ -1,7 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.NotificationEntity;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +14,7 @@ public interface NotificationRepository extends JpaRepository<NotificationEntity
     @Query("""
         SELECT n FROM NotificationEntity n
         JOIN FETCH n.userMakeNotification
-        WHERE n.userMakeNotification.id = :userId
+        WHERE n.userTakeNotification.id = :userId
         ORDER BY n.createdAt DESC
     """)
     Slice<NotificationEntity> findByReceiverId(@Param("userId") String userId, Pageable pageable);

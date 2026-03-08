@@ -49,7 +49,8 @@ public class GroupService {
                 .groupRole(GroupRole.ADMIN)
                 .build();
 
-        return groupMemberRepository.save(adminMember).getId();
+        groupMemberRepository.save(adminMember);
+        return group.getId();
     }
 
     @Transactional
