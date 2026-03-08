@@ -7,6 +7,7 @@ import com.example.demo.entity.AlbumSongEntity;
 import com.example.demo.entity.SongEntity;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
+import com.example.demo.model.content_dto.AlbumListResponse;
 import com.example.demo.model.content_dto.AlbumResponseDetail;
 import com.example.demo.model.content_dto.AlbumSongDto;
 import com.example.demo.model.enum_object.Status;
@@ -49,13 +50,32 @@ public class AlbumService {
         return albumRepository.save(album);
     }
 
-    public List<AlbumEntity> findAll() {
+    public List<AlbumListResponse> findAll() {
         String userId = SecurityUtils.getCurrentUserId();
-        return albumRepository.findByUser_Id(userId);
+        return albumRepository.findByUser_Id(userId).stream()
+                .map(this::mapToListResponse)
+                .toList();
     }
 
-    public List<AlbumEntity> findAllByUser(String userId) {
-        return albumRepository.findByUser_Id(userId);
+    public List<AlbumListResponse> findAllByUser(String userId) {
+        return albumRepository.findByUser_Id(userId).stream()
+                .map(this::mapToListResponse)
+                .toList();
+    }
+
+    private AlbumListResponse mapToListResponse(AlbumEntity entity) {
+        return AlbumListResponse.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .imageUrl(entity.getImageUrl())
+                .albumImageUrl(entity.getImageUrl()) // common field
+                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
+                .username(entity.getUser() != null ? entity.getUser().getName() : null)
+                .nameUser(entity.getUser() != null ? entity.getUser().getName() : null)
+                .songCount(albumSongRepository.countByAlbumEntity_Id(entity.getId()))
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
     @Transactional
     public void addSong(AlbumSongDto albumSongDto) {
@@ -158,6 +178,9 @@ public class AlbumService {
         responseDetail.setName(albumEntity.getName());
         responseDetail.setDescription(albumEntity.getDescription());
         responseDetail.setImageUrl(albumEntity.getImageUrl());
+        responseDetail.setNameUser(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown");
+        responseDetail.setUserId(albumEntity.getUser() != null ? albumEntity.getUser().getId() : null);
+        responseDetail.setCreatedAt(albumEntity.getCreatedAt());
 
         // Gán albumImageUrl (có thể giống imageUrl tùy vào logic dự án của bạn)
         responseDetail.setAlbumImageUrl(albumEntity.getImageUrl());
