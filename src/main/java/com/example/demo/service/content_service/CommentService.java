@@ -8,9 +8,12 @@ import com.example.demo.entity.UserEntity;
 import com.example.demo.model.content_dto.CommentResponse;
 import com.example.demo.model.content_dto.CreateCommentRequest;
 import com.example.demo.model.content_dto.UpdateCommentRequest;
+import com.example.demo.model.enum_object.ActionType;
+import com.example.demo.model.enum_object.TargetNotiType;
 import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +29,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // 1. Tạo comment / reply
     public CommentResponse createComment(CreateCommentRequest request) {
@@ -44,7 +48,6 @@ public class CommentService {
             parentComment = commentRepository.findById(request.getParentCommentId())
                     .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "CMT_NF_001", "Parent comment not found"));
 
-            // Kiểm tra parent comment có thuộc post này không
             if (!parentComment.getPost().getId().equals(request.getPostId())) {
                 throw new AppException(HttpStatus.BAD_REQUEST, "CMT_BR_001", "Parent comment does not belong to this post");
             }
@@ -59,19 +62,24 @@ public class CommentService {
                 .parent(parentComment)
                 .depth(depth)
                 .build();
+        notificationService.send(user, post.getUserEntity(),
+                ActionType.COMMENT, TargetNotiType.POST, post.getId());
 
+        if (parentComment != null) {
+            notificationService.send(user, parentComment.getUser(),
+                    ActionType.COMMENT, TargetNotiType.COMMENT, parentComment.getId());
+        }
         return toResponse(commentRepository.save(comment));
     }
 
-    // 2. Lấy root comments của post (pagination)
     public Page<CommentResponse> getRootComments(String postId, Pageable pageable) {
-        if (!postRepository.existsById(postId)) { // Dùng existsById sẽ nhanh hơn findById nếu không lấy dữ liệu
+        if (!postRepository.existsById(postId)) {
             throw new AppException(HttpStatus.NOT_FOUND, "POST_NF_001", "Post not found");
         }
 
         return commentRepository
                 .findAllByPost_IdAndParentIsNull(postId, pageable)
-                .map(this::toResponse); // Page.map() bảo toàn metadata phân trang
+                .map(this::toResponse);
     }
 
     // 3. Lấy replies (Sửa lỗi .stream())

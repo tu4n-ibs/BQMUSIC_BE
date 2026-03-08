@@ -7,6 +7,7 @@ import com.example.demo.model.content_dto.*;
 
 import com.example.demo.model.enum_object.*;
 import com.example.demo.repository.*;
+import com.example.demo.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ public class PostService {
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
     private final NewsfeedService newsfeedService;
+    private final NotificationService notificationService;
 
     public void userCreateNewPost(CreatePostRequest createPostRequest) {
         String userId = SecurityUtils.getCurrentUserId();
@@ -148,6 +150,10 @@ public class PostService {
                 .build();
 
         postRepository.save(sharePost);
+        if (approvalStatus == ApprovalStatus.APPROVED) {
+            notificationService.send(user, rootPost.getUserEntity(),
+                    ActionType.SHARE, TargetNotiType.POST, rootPost.getId());
+        }
     }
 
     public PostDetailResponse getPostDetail(String postId) {

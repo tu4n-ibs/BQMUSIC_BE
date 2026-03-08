@@ -3,10 +3,14 @@ package com.example.demo.service.content_service;
 import com.example.demo.common.AppException;
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.entity.LikeEntity;
+import com.example.demo.entity.PostEntity;
 import com.example.demo.model.content_dto.LikeResponse;
+import com.example.demo.model.enum_object.ActionType;
+import com.example.demo.model.enum_object.TargetNotiType;
 import com.example.demo.repository.LikeRepository;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +24,7 @@ public class LikeService {
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public LikeResponse toggleLike(String postId) {
         String userId = SecurityUtils.getCurrentUserId();
@@ -40,6 +45,14 @@ public class LikeService {
                     .user(userRepository.getReferenceById(userId))
                     .build();
             likeRepository.save(like);
+            PostEntity post = postRepository.getReferenceById(postId);
+            notificationService.send(
+                    userRepository.getReferenceById(userId), // actor
+                    post.getUserEntity(),                     // chủ post
+                    ActionType.LIKE,
+                    TargetNotiType.POST,
+                    postId
+            );
         }
 
         long likeCount = likeRepository.countByPost_Id(postId);
