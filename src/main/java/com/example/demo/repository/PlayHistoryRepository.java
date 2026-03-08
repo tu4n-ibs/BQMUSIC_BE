@@ -3,12 +3,14 @@ package com.example.demo.repository;
 import com.example.demo.entity.PlayHistoryEntity;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+@Repository
 public interface PlayHistoryRepository extends JpaRepository<PlayHistoryEntity,String> {
     @Query("""
        SELECT s.genre.id, COUNT(ph)
@@ -34,5 +36,19 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistoryEntity,S
             @Param("genreId") String genreId,
             @Param("from")    LocalDateTime from,
             Pageable pageable);
+
+
+        @Query("""
+        SELECT h FROM PlayHistoryEntity h
+        JOIN FETCH h.song s
+        JOIN FETCH s.user u
+        LEFT JOIN FETCH s.genre g
+        WHERE h.user.id = :userId
+        ORDER BY h.playedAt DESC
+    """)
+        Slice<PlayHistoryEntity> findByUserIdOrderByPlayedAtDesc(
+                @Param("userId") String userId,
+                Pageable pageable
+        );
 }
 
