@@ -27,6 +27,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AlbumService {
     private final AlbumRepository albumRepository;
     private final UserRepository userRepository;
@@ -173,19 +174,16 @@ public class AlbumService {
                 .toList(); // Ghi chú: Sử dụng .collect(Collectors.toList()) nếu bạn đang dùng Java version <= 15
 
         // 4. Khởi tạo và trả về đối tượng AlbumResponseDetail tổng
-        // Ghi chú: Giả định ở class AlbumResponseDetail bạn có dùng @Data, @Setter hoặc @Builder
-        AlbumResponseDetail responseDetail = new AlbumResponseDetail();
-        responseDetail.setName(albumEntity.getName());
-        responseDetail.setDescription(albumEntity.getDescription());
-        responseDetail.setImageUrl(albumEntity.getImageUrl());
-        responseDetail.setNameUser(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown");
-        responseDetail.setUserId(albumEntity.getUser() != null ? albumEntity.getUser().getId() : null);
-        responseDetail.setCreatedAt(albumEntity.getCreatedAt());
-
-        // Gán albumImageUrl (có thể giống imageUrl tùy vào logic dự án của bạn)
-        responseDetail.setAlbumImageUrl(albumEntity.getImageUrl());
-        responseDetail.setSongs(songResponses);
-
-        return responseDetail;
+        return AlbumResponseDetail.builder()
+                .name(albumEntity.getName())
+                .description(albumEntity.getDescription())
+                .imageUrl(albumEntity.getImageUrl())
+                .albumImageUrl(albumEntity.getImageUrl())
+                .nameUser(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown")
+                .username(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown")
+                .userId(albumEntity.getUser() != null ? albumEntity.getUser().getId() : null)
+                .createdAt(albumEntity.getCreatedAt())
+                .songs(songResponses)
+                .build();
     }
 }
