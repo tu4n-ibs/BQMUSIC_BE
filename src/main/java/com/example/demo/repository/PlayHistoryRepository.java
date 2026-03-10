@@ -28,7 +28,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistoryEntity,S
     JOIN ph.song s
     LEFT JOIN s.genre g
     WHERE (:genreId IS NULL OR g.id = :genreId)
-      AND (:from IS NULL OR ph.playedAt >= :from)
+      AND ph.playedAt >= :from
       AND s.status = :status
     GROUP BY s.id
     ORDER BY COUNT(ph.id) DESC
