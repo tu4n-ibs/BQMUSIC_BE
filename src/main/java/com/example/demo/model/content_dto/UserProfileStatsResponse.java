@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class UserProfileStatsResponse {
     private long postCount;
+    private long albumCount;
     private long followerCount;
     private long followingCount;
     private boolean isFollowing;
