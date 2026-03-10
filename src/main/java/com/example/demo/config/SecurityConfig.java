@@ -37,7 +37,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/.well-known/appspecific/com.chrome.devtools.json"
+            "/.well-known/appspecific/com.chrome.devtools.json",
+            "/ws/**"
     };
 
     @Bean
