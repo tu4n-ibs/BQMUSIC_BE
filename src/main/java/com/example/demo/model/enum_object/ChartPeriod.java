@@ -11,7 +11,7 @@ public enum ChartPeriod {
         return switch (this) {
             case WEEK_7   -> LocalDateTime.now().minusDays(7);
             case DAY_30   -> LocalDateTime.now().minusDays(30);
-            case ALL_TIME -> null;
+            case ALL_TIME -> LocalDateTime.of(1970, 1, 1, 0, 0);
         };
     }
 }
