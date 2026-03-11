@@ -40,6 +40,9 @@ public class AuthService {
     @Value("${token.secret.key}")
     private String secret;
 
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
     private final RefreshTokenRepository refreshTokenRepository;
 
 
@@ -176,12 +179,12 @@ public class AuthService {
                     .collect(Collectors.joining(","));
             String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
             return String.format(
-                    "http://localhost:3000/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s&name=%s&imageUrl=%s",
-                    token, refreshToken, roles, email, encodedName, picture
+                    "%s/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s&name=%s&imageUrl=%s",
+                    frontendUrl, token, refreshToken, roles, email, encodedName, picture
             );
 
         } catch (Exception e) {
-            return "http://localhost:3000/login?error=true";
+            return String.format("%s/login?error=true", frontendUrl);
         }
     }
 }
