@@ -60,16 +60,19 @@ public class CommentService {
                 .post(post)
                 .user(user)
                 .parent(parentComment)
-                .depth(depth)
                 .build();
+
+        CommentEntity savedComment = commentRepository.save(comment);
+
         notificationService.send(user, post.getUserEntity(),
                 ActionType.COMMENT, TargetNotiType.POST, post.getId());
 
         if (parentComment != null) {
+            String compositeId = post.getId() + ":" + savedComment.getId() + ":" + parentComment.getId();
             notificationService.send(user, parentComment.getUser(),
-                    ActionType.COMMENT, TargetNotiType.COMMENT, post.getId());
+                    ActionType.COMMENT, TargetNotiType.COMMENT, compositeId);
         }
-        return toResponse(commentRepository.save(comment));
+        return toResponse(savedComment);
     }
 
     public Page<CommentResponse> getRootComments(String postId, Pageable pageable) {
