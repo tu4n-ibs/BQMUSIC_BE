@@ -17,6 +17,11 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<PostEntity,String> {
     long countByUserEntity_Id(String userEntityId);
     long countByUserEntity_IdAndPostTypeAndContextTypeAndApprovalStatus(String userEntityId, com.example.demo.model.enum_object.PostType postType, com.example.demo.model.enum_object.ContextType contextType, com.example.demo.model.enum_object.ApprovalStatus approvalStatus);
+    @Query("SELECT COUNT(p) FROM PostEntity p WHERE p.userEntity.id = :userId AND p.contextType = 'PROFILE' AND p.postType = 'OWNER' AND p.approvalStatus = :status AND p.targetType = com.example.demo.model.enum_object.TargetType.ALBUM")
+    long countAlbumsByUserId(@Param("userId") String userId, @Param("status") com.example.demo.model.enum_object.ApprovalStatus status);
+
+    @Query("SELECT COUNT(p) FROM PostEntity p WHERE p.userEntity.id = :userId AND p.contextType = 'PROFILE' AND p.approvalStatus = :status AND (p.postType = 'SHARE' OR p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.ALBUM)")
+    long countRegularPostsByUserId(@Param("userId") String userId, @Param("status") com.example.demo.model.enum_object.ApprovalStatus status);
 
     @Query("""
     SELECT p FROM PostEntity p

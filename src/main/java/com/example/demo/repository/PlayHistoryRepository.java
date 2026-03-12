@@ -23,18 +23,20 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistoryEntity,S
     List<Object[]> findTopGenreIdsByUserId(String userId, Pageable pageable);
 
     @Query("""
-    SELECT s, COUNT(ph.id) AS playCount
+    SELECT s.id, COUNT(ph.id)
     FROM PlayHistoryEntity ph
     JOIN ph.song s
-    WHERE (:genreId IS NULL OR s.genre.id = :genreId)
-      AND (:from IS NULL OR ph.playedAt >= :from)
-      AND s.status = 'ACTIVE'
-    GROUP BY s
-    ORDER BY playCount DESC
+    LEFT JOIN s.genre g
+    WHERE (:genreId IS NULL OR g.id = :genreId)
+      AND ph.playedAt >= :from
+      AND s.status = :status
+    GROUP BY s.id
+    ORDER BY COUNT(ph.id) DESC
     """)
     List<Object[]> findTopSongs(
             @Param("genreId") String genreId,
             @Param("from")    LocalDateTime from,
+            @Param("status")  com.example.demo.model.enum_object.Status status,
             Pageable pageable);
 
 

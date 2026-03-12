@@ -151,6 +151,7 @@ public class SongService {
         history.setPlayedAt(LocalDateTime.now());
         playHistoryRepository.save(history);
     }
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Slice<TopSongResponse> getTopSongs(ChartPeriod period, String genreId, Pageable pageable) {
         LocalDateTime from = period.fromDate();
 
@@ -160,18 +161,34 @@ public class SongService {
                 pageable.getPageSize() + 1
         );
 
-        List<Object[]> rows = playHistoryRepository.findTopSongs(genreId, from, fetchPage);
+        // Đảm bảo genreId là null nếu là chuỗi rỗng để query IS NULL hoạt động đúng
+        String effectiveGenreId = (genreId != null && genreId.trim().isEmpty()) ? null : genreId;
+
+        List<Object[]> rows = playHistoryRepository.findTopSongs(effectiveGenreId, from, Status.PUBLISHED, fetchPage);
 
         boolean hasNext = rows.size() > pageable.getPageSize();
         if (hasNext) rows = rows.subList(0, pageable.getPageSize());
+
+        // 1. Thu thập tất cả songId từ kết quả query
+        List<String> songIds = rows.stream()
+                .map(row -> (String) row[0])
+                .toList();
+
+        // 2. Fetch tất cả SongEntity trong 1 lần query để tránh N+1 và Lazy loading
+        // Sử dụng Map để look up nhanh
+        java.util.Map<String, SongEntity> songMap = songRepository.findAllById(songIds).stream()
+                .collect(java.util.stream.Collectors.toMap(SongEntity::getId, s -> s));
 
         // Tính rank tuyệt đối (không reset về 1 ở mỗi page)
         int baseRank = pageable.getPageNumber() * pageable.getPageSize();
 
         List<TopSongResponse> result = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
-            SongEntity song = (SongEntity) rows.get(i)[0];
-            long       cnt  = (Long)       rows.get(i)[1];
+            String     songId = (String) rowIdAndCount(rows.get(i))[0];
+            long       cnt    = ((Number) rowIdAndCount(rows.get(i))[1]).longValue();
+            SongEntity song   = songMap.get(songId);
+
+            if (song == null) continue;
 
             result.add(TopSongResponse.builder()
                     .rank(baseRank + i + 1)
@@ -190,4 +207,6 @@ public class SongService {
 
         return new SliceImpl<>(result, pageable, hasNext);
     }
+
+    private Object[] rowIdAndCount(Object[] row) { return row; }
 }

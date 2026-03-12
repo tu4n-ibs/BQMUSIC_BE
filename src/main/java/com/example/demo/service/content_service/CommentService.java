@@ -67,7 +67,7 @@ public class CommentService {
 
         if (parentComment != null) {
             notificationService.send(user, parentComment.getUser(),
-                    ActionType.COMMENT, TargetNotiType.COMMENT, parentComment.getId());
+                    ActionType.COMMENT, TargetNotiType.COMMENT, post.getId());
         }
         return toResponse(commentRepository.save(comment));
     }
