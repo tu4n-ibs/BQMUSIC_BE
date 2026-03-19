@@ -136,6 +136,10 @@ public class AuthService {
         UserEntity user = userRepository.findById(refreshTokenEntity.getUserId())
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_002", "User not found for this token"));
 
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new AppException(HttpStatus.CONFLICT, "USER_BLOCK", "User blocked");
+        }
+
         return createJwt(user);
     }
 
@@ -169,6 +173,10 @@ public class AuthService {
                         newUser.setProvider(Provider.GOOGLE);
                         return userRepository.save(newUser);
                     });
+
+            if (Boolean.FALSE.equals(user.getIsActive())) {
+                return String.format("%s/login?error=USER_BLOCK", frontendUrl);
+            }
 
             LoginResponse loginResponse = createRefreshToken(user);
 

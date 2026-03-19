@@ -13,8 +13,10 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserPageResponse {
+    private String id;
     private String name;
     private String email;
     private String imageUrl;
+    private Boolean isActive;
     private Set<String> roles = new HashSet<>();
 }

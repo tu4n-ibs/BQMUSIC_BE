@@ -113,4 +113,11 @@ public class UserController {
     public ApiResponse<UserDetailResponse> findById(@PathVariable String id) {
         return ApiResponse.success(userService.getUserDetail(id),"success");
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("userId/{id}")
+    public ApiResponse<Void> updateStatus(@PathVariable String id, @RequestParam Boolean isActive) {
+        userService.updateStatus(id, isActive);
+        return ApiResponse.success(null, "User status updated successfully");
+    }
 }

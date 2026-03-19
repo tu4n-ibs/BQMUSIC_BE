@@ -204,9 +204,11 @@ public class UserService {
 
         return userEntityPage.map(userEntity -> {
             UserPageResponse response = new UserPageResponse();
+            response.setId(userEntity.getId());
             response.setName(userEntity.getName());
             response.setEmail(userEntity.getEmail());
             response.setImageUrl(userEntity.getImageUrl());
+            response.setIsActive(userEntity.getIsActive());
 
             Set<String> roles = userEntity.getRoles()
                     .stream()
@@ -262,5 +264,13 @@ public class UserService {
     public UserDetailResponse getUserDetail(String id) {
         UserEntity user = userRepository.findById(id).orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
         return new UserDetailResponse(user.getId(), user.getName(), user.getImageUrl(), user.getEmail());
+    }
+
+    @Transactional
+    public void updateStatus(String id, Boolean isActive) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_NF_001", "User not found"));
+        user.setIsActive(isActive);
+        userRepository.save(user);
     }
 }
