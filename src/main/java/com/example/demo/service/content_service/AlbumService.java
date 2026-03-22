@@ -34,7 +34,7 @@ public class AlbumService {
     private final SongRepository songRepository;
     private final AlbumSongRepository albumSongRepository;
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
-    public AlbumEntity save(AlbumCreateRequest request) {
+    public AlbumEntity save(MultipartFile file , AlbumCreateRequest request) {
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(
@@ -42,10 +42,11 @@ public class AlbumService {
                         "ALBUM_001",
                         "Cannot found this album"
                 ));
+        String fileName = cloudinaryServiceForImage.uploadFile(file);
         AlbumEntity album = new AlbumEntity();
+        album.setImageUrl(fileName);
         album.setName(request.getName());
         album.setDescription(request.getDescription());
-        album.setImageUrl(request.getImageUrl());
         album.setUser(user);
 
         return albumRepository.save(album);

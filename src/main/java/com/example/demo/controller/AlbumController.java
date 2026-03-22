@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.AlbumEntity;
 import com.example.demo.model.ApiResponse;
 import com.example.demo.model.content_dto.AlbumCreateRequest;
 import com.example.demo.model.content_dto.AlbumListResponse;
@@ -20,8 +19,8 @@ public class AlbumController {
     private final AlbumService albumService;
 
     @PostMapping
-    public ApiResponse<?> newAlbum(@RequestBody AlbumCreateRequest albumCreateRequest) {
-        albumService.save(albumCreateRequest);
+    public ApiResponse<?> newAlbum(@RequestParam MultipartFile file ,@ModelAttribute AlbumCreateRequest albumCreateRequest) {
+        albumService.save(file,albumCreateRequest);
         return ApiResponse.success(null);
     }
 
