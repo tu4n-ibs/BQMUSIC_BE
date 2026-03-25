@@ -42,9 +42,14 @@ public class AlbumService {
                         "ALBUM_001",
                         "Cannot found this album"
                 ));
-        String fileName = cloudinaryServiceForImage.uploadFile(file);
         AlbumEntity album = new AlbumEntity();
-        album.setImageUrl(fileName);
+        if (file != null && !file.isEmpty()) {
+            String fileName = cloudinaryServiceForImage.uploadFile(file);
+            album.setImageUrl(fileName);
+        } else {
+             album.setImageUrl(null);
+        }
+
         album.setName(request.getName());
         album.setDescription(request.getDescription());
         album.setUser(user);
