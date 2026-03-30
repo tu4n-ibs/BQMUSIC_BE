@@ -10,7 +10,6 @@ import com.example.demo.service.content_service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -142,14 +141,14 @@ public class GroupController {
     """
     )
     @GetMapping("/{groupId}/join-requests/pending")
-    public ResponseEntity<List<GroupJoinRequestResponse>> getPendingJoinRequests(
+    public ApiResponse<List<GroupJoinRequestResponse>> getPendingJoinRequests(
             @PathVariable String groupId
     ) {
         String currentUserId = SecurityUtils.getCurrentUserId();
         List<GroupJoinRequestResponse> responses =
                 groupService.getPendingRequests(groupId, currentUserId);
 
-        return ResponseEntity.ok(responses);
+        return ApiResponse.success(responses);
     }
     @PostMapping("/{groupId}/leave")
     @Operation(
