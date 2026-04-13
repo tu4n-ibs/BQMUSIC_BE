@@ -31,6 +31,15 @@ public class EmailService {
     public void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
             log.info("Starting to send email via Brevo to: {} with subject: {}", to, subject);
+            
+            // Log debug (Sẽ xóa sau khi thành công)
+            if (brevoApiKey == null || brevoApiKey.equals("dummy_key")) {
+                log.error("CRITICAL: BREVO_API_KEY is NOT set or using dummy value!");
+            } else {
+                log.info("API Key loaded. Length: {}, Prefix: {}...", 
+                        brevoApiKey.length(), 
+                        brevoApiKey.substring(0, Math.min(brevoApiKey.length(), 10)));
+            }
 
             String url = "https://api.brevo.com/v3/smtp/email";
 
