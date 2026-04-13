@@ -37,6 +37,7 @@ public class EmailService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("api-key", brevoApiKey);
+            headers.set("x-sib-api-key", brevoApiKey);
 
             // Cấu trúc JSON cho Brevo
             Map<String, Object> body = new HashMap<>();
