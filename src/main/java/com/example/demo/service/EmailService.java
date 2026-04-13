@@ -19,10 +19,10 @@ import java.util.Map;
 @Slf4j
 public class EmailService {
 
-    @Value("${sendgrid.api.key}")
-    private String sendgridApiKey;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
 
-    @Value("${sendgrid.from.email}")
+    @Value("${brevo.from.email}")
     private String fromEmail;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -30,46 +30,43 @@ public class EmailService {
     @Async
     public void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
-            log.info("Starting to send email via SendGrid to: {} with subject: {}", to, subject);
+            log.info("Starting to send email via Brevo to: {} with subject: {}", to, subject);
 
-            String url = "https://api.sendgrid.com/v3/mail/send";
+            String url = "https://api.brevo.com/v3/smtp/email";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(sendgridApiKey);
+            headers.set("api-key", brevoApiKey);
 
-            // Cấu trúc JSON cho SendGrid
+            // Cấu trúc JSON cho Brevo
             Map<String, Object> body = new HashMap<>();
             
-            // Personalizations
-            Map<String, Object> personalization = new HashMap<>();
-            personalization.put("to", List.of(Map.of("email", to)));
-            personalization.put("subject", subject);
-            body.put("personalizations", List.of(personalization));
+            // Sender
+            body.put("sender", Map.of("email", fromEmail));
 
-            // From
-            body.put("from", Map.of("email", fromEmail));
+            // To
+            body.put("to", List.of(Map.of("email", to)));
+
+            // Subject
+            body.put("subject", subject);
 
             // Content
-            Map<String, String> content = new HashMap<>();
-            content.put("type", "text/html");
-            content.put("value", htmlContent);
-            body.put("content", List.of(content));
+            body.put("htmlContent", htmlContent);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-            log.debug("Sending request to SendGrid API...");
+            log.debug("Sending request to Brevo API...");
             var response = restTemplate.postForEntity(url, request, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Email sent successfully via SendGrid to: {}", to);
+                log.info("Email sent successfully via Brevo to: {}", to);
             } else {
-                log.error("Failed to send email via SendGrid to: {}. Status code: {}, Response: {}", 
+                log.error("Failed to send email via Brevo to: {}. Status code: {}, Response: {}", 
                         to, response.getStatusCode(), response.getBody());
             }
 
         } catch (Exception e) {
-            log.error("Error occurred while sending email via SendGrid to: {}. Error: {}", to, e.getMessage(), e);
+            log.error("Error occurred while sending email via Brevo to: {}. Error: {}", to, e.getMessage(), e);
         }
     }
     public String buildForgotPasswordEmailTemplate(String otpCode, String email) {
