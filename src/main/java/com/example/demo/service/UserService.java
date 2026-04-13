@@ -12,7 +12,6 @@ import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.redis.RedisAuthRepository;
 import com.example.demo.repository.redis.RedisAuthSchema;
-import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -104,13 +103,8 @@ public class UserService {
         String otpCode = processOtpCode();
         redisAuthRepository.saveOtpSession(key, otpCode, 90);
 
-        try {
-            String htmlContent = emailService.buildForgotPasswordEmailTemplate(otpCode, email);
-            emailService.sendHtmlMail(email, "Password Reset Verification Code", htmlContent);
-        } catch (MessagingException e) {
-            throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "EMAIL_SEND_FAILED",
-                    "Unable to send verification email");
-        }
+        String htmlContent = emailService.buildForgotPasswordEmailTemplate(otpCode, email);
+        emailService.sendHtmlMail(email, "Password Reset Verification Code", htmlContent);
     }
 
     @Transactional
@@ -175,13 +169,8 @@ public class UserService {
         String otpCode = processOtpCode();
         redisAuthRepository.saveOtpSession(key, otpCode, 90);
 
-        try {
-            String htmlContent = emailService.buildOtpEmailTemplate(otpCode, email);
-            emailService.sendHtmlMail(email, "register code", htmlContent);
-        } catch (MessagingException e) {
-            throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "EMAIL_SEND_FAILED",
-                    "Không thể gửi email xác thực");
-        }
+        String htmlContent = emailService.buildOtpEmailTemplate(otpCode, email);
+        emailService.sendHtmlMail(email, "register code", htmlContent);
     }
 
     public void verifyOTP(String email, String inputCode) {
