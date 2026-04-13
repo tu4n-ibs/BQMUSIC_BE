@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -18,10 +19,10 @@ import java.util.Map;
 @Slf4j
 public class EmailService {
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    @Value("${sendgrid.api.key}")
+    private String sendgridApiKey;
 
-    @Value("${resend.from.email}")
+    @Value("${sendgrid.from.email}")
     private String fromEmail;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -29,34 +30,46 @@ public class EmailService {
     @Async
     public void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
-            log.info("Starting to send email to: {} with subject: {}", to, subject);
+            log.info("Starting to send email via SendGrid to: {} with subject: {}", to, subject);
 
-            String url = "https://api.resend.com/emails";
+            String url = "https://api.sendgrid.com/v3/mail/send";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(resendApiKey);
+            headers.setBearerAuth(sendgridApiKey);
 
+            // Cấu trúc JSON cho SendGrid
             Map<String, Object> body = new HashMap<>();
-            body.put("from", fromEmail);
-            body.put("to", new String[]{to});
-            body.put("subject", subject);
-            body.put("html", htmlContent);
+            
+            // Personalizations
+            Map<String, Object> personalization = new HashMap<>();
+            personalization.put("to", List.of(Map.of("email", to)));
+            personalization.put("subject", subject);
+            body.put("personalizations", List.of(personalization));
+
+            // From
+            body.put("from", Map.of("email", fromEmail));
+
+            // Content
+            Map<String, String> content = new HashMap<>();
+            content.put("type", "text/html");
+            content.put("value", htmlContent);
+            body.put("content", List.of(content));
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-            log.debug("Sending request to Resend API...");
+            log.debug("Sending request to SendGrid API...");
             var response = restTemplate.postForEntity(url, request, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Email sent successfully to: {}. Resend ID: {}", to, response.getBody());
+                log.info("Email sent successfully via SendGrid to: {}", to);
             } else {
-                log.error("Failed to send email to: {}. Status code: {}, Response: {}", 
+                log.error("Failed to send email via SendGrid to: {}. Status code: {}, Response: {}", 
                         to, response.getStatusCode(), response.getBody());
             }
 
         } catch (Exception e) {
-            log.error("Error occurred while sending email to: {}. Error: {}", to, e.getMessage(), e);
+            log.error("Error occurred while sending email via SendGrid to: {}. Error: {}", to, e.getMessage(), e);
         }
     }
     public String buildForgotPasswordEmailTemplate(String otpCode, String email) {
