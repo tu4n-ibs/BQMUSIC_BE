@@ -2,11 +2,14 @@ package com.example.demo.controller;
 
 import com.example.demo.common.SecurityUtils;
 import com.example.demo.model.ApiResponse;
+import com.example.demo.model.content_dto.UserDTO;
 import com.example.demo.model.content_dto.UserProfileStatsResponse;
 import com.example.demo.service.UserFollowService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/follow-user")
@@ -70,5 +73,23 @@ public class UserFollowController {
         UserProfileStatsResponse stats = userFollowService.getProfileStats(userId, currentUserId);
 
         return ApiResponse.success(stats);
+    }
+
+    @GetMapping("/following")
+    @Operation(
+            summary = "Danh sách người tôi đang theo dõi",
+            description = "Trả về danh sách người dùng mà tài khoản hiện tại đang theo dõi."
+    )
+    public ApiResponse<List<UserDTO>> getFollowing() {
+        return ApiResponse.success(userFollowService.checkUserFollowing());
+    }
+
+    @GetMapping("/followers")
+    @Operation(
+            summary = "Danh sách người đang theo dõi tôi",
+            description = "Trả về danh sách người dùng đang theo dõi tài khoản hiện tại."
+    )
+    public ApiResponse<List<UserDTO>> getFollowers() {
+        return ApiResponse.success(userFollowService.checkUserFollower());
     }
 }

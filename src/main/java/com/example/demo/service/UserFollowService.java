@@ -1,20 +1,22 @@
 package com.example.demo.service;
 
 import com.example.demo.common.AppException;
+import com.example.demo.common.SecurityUtils;
 import com.example.demo.entity.UserEntity;
 import com.example.demo.entity.UserFollowEntity;
+import com.example.demo.model.content_dto.UserDTO;
 import com.example.demo.model.content_dto.UserProfileStatsResponse;
 import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.model.enum_object.PostType;
-import com.example.demo.model.enum_object.ContextType;
 import com.example.demo.model.enum_object.ApprovalStatus;
 import com.example.demo.service.content_service.NewsfeedService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,27 @@ public class UserFollowService {
 
         userFollowRepository.save(userFollow);
         newsfeedService.invalidateNewsfeedCache(followerId);
+    }
+
+    @Transactional
+    public List<UserDTO> checkUserFollowing() {
+        String followerId = SecurityUtils.getCurrentUserId();
+        List<UserFollowEntity> list = userFollowRepository
+                .findUserFollowEntitiesByFollower_Id(followerId);
+
+        return list.stream()
+                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollowing()))
+                .toList();
+    }
+    @Transactional
+    public List<UserDTO> checkUserFollower() {
+        String followingId = SecurityUtils.getCurrentUserId();
+        List<UserFollowEntity> list = userFollowRepository
+                .findUserFollowEntitiesByFollowing_Id((followingId));
+
+        return list.stream()
+                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollower()))
+                .toList();
     }
 
     @Transactional

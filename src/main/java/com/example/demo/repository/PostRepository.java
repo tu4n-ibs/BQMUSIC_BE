@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface PostRepository extends JpaRepository<PostEntity,String> {
@@ -138,4 +137,7 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
     List<PostEntity> findTrendingPublicPosts(
             @Param("visibility") Visibility visibility,
             @Param("approvalStatus") ApprovalStatus approvalStatus,
-            Pageable pageable);}
+            Pageable pageable);
+
+    List<PostEntity> findPostEntitiesByApprovalStatusAndContextTypeId(ApprovalStatus approvalStatus, String contextTypeId);
+}

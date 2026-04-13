@@ -6,6 +6,7 @@ import com.example.demo.model.content_dto.CreateGroupRequest;
 import com.example.demo.model.content_dto.GroupByUser;
 import com.example.demo.model.content_dto.GroupDetailResponse;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
+import com.example.demo.model.enum_object.ApprovalStatus;
 import com.example.demo.model.enum_object.GroupJoinStatus;
 import com.example.demo.model.enum_object.GroupRole;
 import com.example.demo.repository.*;
@@ -25,6 +26,7 @@ public class GroupService {
     private final GroupJoinRequestRepository groupJoinRequestRepository;
     private final UserRepository userRepository;
     private final NewsfeedService newsfeedService;
+    private final PostRepository postRepository;
 
     // ==================== TẠO GROUP ====================
     @Transactional
@@ -65,6 +67,11 @@ public class GroupService {
         GroupEntity group = member.getGroupEntity();
         boolean currentVal = group.getRequirePostApproval() != null && group.getRequirePostApproval();
         group.setRequirePostApproval(!currentVal);
+        if(group.getRequirePostApproval().equals(true)){
+            List<PostEntity> postEntityList = postRepository
+                    .findPostEntitiesByApprovalStatusAndContextTypeId(ApprovalStatus.PENDING, groupId);
+            postRepository.saveAll(postEntityList);
+        }
         groupRepository.save(group);
     }
 
@@ -76,10 +83,13 @@ public class GroupService {
         if (member.getGroupRole() != GroupRole.ADMIN) {
             throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only group admin can perform this action");
         }
-
         GroupEntity group = member.getGroupEntity();
         boolean currentVal = group.getIsPrivate() != null && group.getIsPrivate();
         group.setIsPrivate(!currentVal);
+        if(group.getIsPrivate().equals(true)){
+            List<GroupJoinRequestEntity> groupMemberEntities = groupJoinRequestRepository.getGroupJoinRequestEntitiesByGroupJoinStatusAndGroup_Id(GroupJoinStatus.PENDING,groupId);
+            groupJoinRequestRepository.saveAll(groupMemberEntities);
+        }
         groupRepository.save(group);
     }
 
