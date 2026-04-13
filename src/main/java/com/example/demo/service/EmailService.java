@@ -1,32 +1,86 @@
 package com.example.demo.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailService {
 
-    private final JavaMailSender javaMailSender;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
+
+    @Value("${brevo.from.email}")
+    private String fromEmail;
+
+    @Value("${brevo.from.name}")
+    private String fromName;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Async
-    public void sendHtmlMail(String to, String subject, String htmlContent)
-            throws MessagingException {
+    public void sendHtmlMail(String to, String subject, String htmlContent) {
+        try {
+            log.info("Starting to send email via Brevo to: {} with subject: {}", to, subject);
+            
+            // Log debug (Sẽ xóa sau khi thành công)
+            if (brevoApiKey == null || brevoApiKey.equals("dummy_key")) {
+                log.error("CRITICAL: BREVO_API_KEY is NOT set or using dummy value!");
+            } else {
+                log.info("API Key loaded. Length: {}, Prefix: {}...", 
+                        brevoApiKey.length(), 
+                        brevoApiKey.substring(0, Math.min(brevoApiKey.length(), 10)));
+            }
 
-        MimeMessage message = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper =
-                new MimeMessageHelper(message, true, "UTF-8");
+            String url = "https://api.brevo.com/v3/smtp/email";
 
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true); // true = HTML
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey);
+            headers.set("x-sib-api-key", brevoApiKey);
 
-        javaMailSender.send(message);
+            // Cấu trúc JSON cho Brevo
+            Map<String, Object> body = new HashMap<>();
+            
+            // Sender
+            body.put("sender", Map.of("email", fromEmail, "name", fromName));
+
+            // To
+            body.put("to", List.of(Map.of("email", to)));
+
+            // Subject
+            body.put("subject", subject);
+
+            // Content
+            body.put("htmlContent", htmlContent);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            log.debug("Sending request to Brevo API...");
+            var response = restTemplate.postForEntity(url, request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Email sent successfully via Brevo to: {}", to);
+            } else {
+                log.error("Failed to send email via Brevo to: {}. Status code: {}, Response: {}", 
+                        to, response.getStatusCode(), response.getBody());
+            }
+
+        } catch (Exception e) {
+            log.error("Error occurred while sending email via Brevo to: {}. Error: {}", to, e.getMessage(), e);
+        }
     }
     public String buildForgotPasswordEmailTemplate(String otpCode, String email) {
         String template = """
