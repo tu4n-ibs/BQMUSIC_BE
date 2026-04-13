@@ -25,6 +25,9 @@ public class EmailService {
     @Value("${brevo.from.email}")
     private String fromEmail;
 
+    @Value("${brevo.from.name}")
+    private String fromName;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Async
@@ -52,7 +55,7 @@ public class EmailService {
             Map<String, Object> body = new HashMap<>();
             
             // Sender
-            body.put("sender", Map.of("email", fromEmail));
+            body.put("sender", Map.of("email", fromEmail, "name", fromName));
 
             // To
             body.put("to", List.of(Map.of("email", to)));
