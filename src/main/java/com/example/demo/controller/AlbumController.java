@@ -19,26 +19,15 @@ public class AlbumController {
     private final AlbumService albumService;
 
     @PostMapping
-    public ApiResponse<AlbumListResponse> newAlbum(
-            @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam("name") String name,
-            @RequestParam(value = "description", required = false) String description) {
-        AlbumCreateRequest request = new AlbumCreateRequest();
-        request.setName(name);
-        request.setDescription(description);
-        return ApiResponse.success(albumService.save(file, request));
+    public ApiResponse<AlbumListResponse> newAlbum(@ModelAttribute AlbumCreateRequest request) {
+        return ApiResponse.success(albumService.save(request));
     }
 
     @PutMapping("/{albumId}")
     public ApiResponse<?> updateAlbum(
             @PathVariable String albumId,
-            @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam("name") String name,
-            @RequestParam(value = "description", required = false) String description) {
-        AlbumCreateRequest request = new AlbumCreateRequest();
-        request.setName(name);
-        request.setDescription(description);
-        albumService.update(albumId, request, file);
+            @ModelAttribute AlbumCreateRequest request) {
+        albumService.update(albumId, request);
         return ApiResponse.success(null);
     }
 

@@ -34,7 +34,8 @@ public class AlbumService {
     private final SongRepository songRepository;
     private final AlbumSongRepository albumSongRepository;
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
-    public AlbumListResponse save(MultipartFile file , AlbumCreateRequest request) {
+    public AlbumListResponse save(AlbumCreateRequest request) {
+        MultipartFile file = request.getFile();
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(
@@ -129,7 +130,8 @@ public class AlbumService {
         albumSongRepository.save(new AlbumSongEntity(album, song, trackNumber));
     }
 
-    public void update(String albumId, AlbumCreateRequest request, MultipartFile file) {
+    public void update(String albumId, AlbumCreateRequest request) {
+        MultipartFile file = request.getFile();
         String userId = SecurityUtils.getCurrentUserId();
         AlbumEntity album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new AppException(
