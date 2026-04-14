@@ -8,10 +8,12 @@ import com.example.demo.model.content_dto.GroupDetailResponse;
 import com.example.demo.model.content_dto.GroupJoinRequestResponse;
 import com.example.demo.model.enum_object.ApprovalStatus;
 import com.example.demo.model.enum_object.GroupJoinStatus;
-import com.example.demo.model.enum_object.GroupRole;
+import com.example.demo.model.enum_object.*;
 import com.example.demo.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -66,12 +68,17 @@ public class GroupService {
 
         GroupEntity group = member.getGroupEntity();
         boolean currentVal = group.getRequirePostApproval() != null && group.getRequirePostApproval();
-        group.setRequirePostApproval(!currentVal);
-        if(group.getRequirePostApproval().equals(true)){
-            List<PostEntity> postEntityList = postRepository
+        boolean newVal = !currentVal;
+        group.setRequirePostApproval(newVal);
+        
+        // Logic mới: Nếu tắt yêu cầu phê duyệt -> Tự động duyệt tất cả bài viết đang chờ
+        if (!newVal) {
+            List<PostEntity> pendingPosts = postRepository
                     .findPostEntitiesByApprovalStatusAndContextTypeId(ApprovalStatus.PENDING, groupId);
-            postRepository.saveAll(postEntityList);
+            pendingPosts.forEach(post -> post.setApprovalStatus(ApprovalStatus.APPROVED));
+            postRepository.saveAll(pendingPosts);
         }
+        
         groupRepository.save(group);
     }
 
@@ -85,11 +92,32 @@ public class GroupService {
         }
         GroupEntity group = member.getGroupEntity();
         boolean currentVal = group.getIsPrivate() != null && group.getIsPrivate();
-        group.setIsPrivate(!currentVal);
-        if(group.getIsPrivate().equals(true)){
-            List<GroupJoinRequestEntity> groupMemberEntities = groupJoinRequestRepository.getGroupJoinRequestEntitiesByGroupJoinStatusAndGroup_Id(GroupJoinStatus.PENDING,groupId);
-            groupJoinRequestRepository.saveAll(groupMemberEntities);
+        boolean newVal = !currentVal;
+        group.setIsPrivate(newVal);
+        
+        // Logic mới: Nếu tắt chế độ riêng tư -> Tự động duyệt tất cả yêu cầu gia nhập
+        if (!newVal) {
+            List<GroupJoinRequestEntity> pendingRequests = groupJoinRequestRepository
+                    .findAllByGroup_IdAndGroupJoinStatus(groupId, GroupJoinStatus.PENDING);
+            
+            pendingRequests.forEach(request -> {
+                request.setGroupJoinStatus(GroupJoinStatus.APPROVED);
+                
+                // Tạo member mới cho từng yêu cầu được duyệt
+                if (!groupMemberRepository.existsByGroupEntity_IdAndUserEntity_Id(groupId, request.getUser().getId())) {
+                    GroupMemberEntity newMember = GroupMemberEntity.builder()
+                            .groupEntity(group)
+                            .userEntity(request.getUser())
+                            .groupRole(GroupRole.MEMBER)
+                            .build();
+                    groupMemberRepository.save(newMember);
+                }
+                // Xóa cache newsfeed của user để cập nhật bài viết từ nhóm mới
+                newsfeedService.invalidateNewsfeedCache(request.getUser().getId());
+            });
+            groupJoinRequestRepository.saveAll(pendingRequests);
         }
+        
         groupRepository.save(group);
     }
 
@@ -180,27 +208,24 @@ public class GroupService {
         groupJoinRequestRepository.save(joinRequest);
     }
 
-    public List<GroupJoinRequestResponse> getPendingRequests(String groupId, String currentUserId) {
-        GroupMemberEntity admin = groupMemberRepository.findByGroupEntity_IdAndUserEntity_Id(groupId, currentUserId)
-                .orElseThrow(() -> new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_001", "User is not a member of this group"));
-        groupRepository.findById(groupId)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
-        if (admin.getGroupRole() != GroupRole.ADMIN) {
-            throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only group admin can perform this action");
-        }
-         List<GroupJoinRequestEntity> groupJoinRequestEntities= groupJoinRequestRepository.
-                  findAllByGroup_IdAndGroupJoinStatus(groupId, GroupJoinStatus.PENDING);
+    public Page<GroupJoinRequestResponse> getPendingRequests(String groupId, String query, Pageable pageable, String currentUserId) {
+        validateAdminRole(groupId, currentUserId);
+        
+        if (query == null) query = "";
+        
+        Page<GroupJoinRequestEntity> page = groupJoinRequestRepository
+                .findPendingRequestsByGroupSearch(groupId, GroupJoinStatus.PENDING, query, pageable);
 
-        return groupJoinRequestEntities.stream().map(groupJoinRequestEntity -> {
-            UserEntity userEntity = groupJoinRequestEntity.getUser();
+        return page.map(joinRequest -> {
+            UserEntity userEntity = joinRequest.getUser();
             return GroupJoinRequestResponse.builder()
-                    .groupJoinRequestId(groupJoinRequestEntity.getId())
+                    .groupJoinRequestId(joinRequest.getId())
                     .userId(userEntity.getId())
                     .name(userEntity.getName())
                     .imageUrl(userEntity.getImageUrl())
-                    .joinDate(groupJoinRequestEntity.getCreatedAt())
+                    .joinDate(joinRequest.getCreatedAt())
                     .build();
-        }).toList();
+        });
     }
     @Transactional
     public void leaveGroup(String groupId, String currentUserId) {

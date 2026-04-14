@@ -10,9 +10,13 @@ import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.model.enum_object.ApprovalStatus;
+import com.example.demo.model.enum_object.ActionType;
+import com.example.demo.model.enum_object.TargetNotiType;
 import com.example.demo.service.content_service.NewsfeedService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +30,7 @@ public class UserFollowService {
     private final UserFollowRepository userFollowRepository;
     private final PostRepository postRepository;
     private final NewsfeedService newsfeedService;
+    private final NotificationService notificationService;
 
     @Transactional
     public void followUser(String followerId, String followingId) {
@@ -51,27 +56,29 @@ public class UserFollowService {
 
         userFollowRepository.save(userFollow);
         newsfeedService.invalidateNewsfeedCache(followerId);
+
+        // Gửi thông báo cho người được follow
+        notificationService.send(follower, following, ActionType.FOLLOW, TargetNotiType.USER, followerId);
     }
 
     @Transactional
-    public List<UserDTO> checkUserFollowing() {
-        String followerId = SecurityUtils.getCurrentUserId();
-        List<UserFollowEntity> list = userFollowRepository
-                .findUserFollowEntitiesByFollower_Id(followerId);
+    public Page<UserDTO> getFollowing(String userId, String query, Pageable pageable) {
+        if (query == null) query = "";
+        
+        Page<UserFollowEntity> page = userFollowRepository
+                .findFollowingByUserName(userId, query, pageable);
 
-        return list.stream()
-                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollowing()))
-                .toList();
+        return page.map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollowing()));
     }
-    @Transactional
-    public List<UserDTO> checkUserFollower() {
-        String followingId = SecurityUtils.getCurrentUserId();
-        List<UserFollowEntity> list = userFollowRepository
-                .findUserFollowEntitiesByFollowing_Id((followingId));
 
-        return list.stream()
-                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollower()))
-                .toList();
+    @Transactional
+    public Page<UserDTO> getFollowers(String userId, String query, Pageable pageable) {
+        if (query == null) query = "";
+
+        Page<UserFollowEntity> page = userFollowRepository
+                .findFollowersByUserName(userId, query, pageable);
+
+        return page.map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollower()));
     }
 
     @Transactional

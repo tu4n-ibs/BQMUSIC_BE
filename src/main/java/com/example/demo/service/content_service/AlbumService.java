@@ -34,7 +34,8 @@ public class AlbumService {
     private final SongRepository songRepository;
     private final AlbumSongRepository albumSongRepository;
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
-    public AlbumEntity save(MultipartFile file , AlbumCreateRequest request) {
+    public AlbumListResponse save(AlbumCreateRequest request) {
+        MultipartFile file = request.getFile();
         String userId = SecurityUtils.getCurrentUserId();
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(
@@ -54,7 +55,8 @@ public class AlbumService {
         album.setDescription(request.getDescription());
         album.setUser(user);
 
-        return albumRepository.save(album);
+        AlbumEntity savedAlbum = albumRepository.save(album);
+        return mapToListResponse(savedAlbum);
     }
 
     public List<AlbumListResponse> findAll() {
@@ -76,10 +78,8 @@ public class AlbumService {
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .imageUrl(entity.getImageUrl())
-                .albumImageUrl(entity.getImageUrl()) // common field
                 .userId(entity.getUser() != null ? entity.getUser().getId() : null)
                 .username(entity.getUser() != null ? entity.getUser().getName() : null)
-                .nameUser(entity.getUser() != null ? entity.getUser().getName() : null)
                 .songCount(albumSongRepository.countByAlbumEntity_Id(entity.getId()))
                 .createdAt(entity.getCreatedAt())
                 .build();
@@ -128,6 +128,35 @@ public class AlbumService {
         int trackNumber = opTrack.map(t -> t + 1).orElse(1);
 
         albumSongRepository.save(new AlbumSongEntity(album, song, trackNumber));
+    }
+
+    public void update(String albumId, AlbumCreateRequest request) {
+        MultipartFile file = request.getFile();
+        String userId = SecurityUtils.getCurrentUserId();
+        AlbumEntity album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new AppException(
+                        HttpStatus.NOT_FOUND,
+                        "ALBUM_001",
+                        "Cannot found this album"
+                ));
+
+        if (!userId.equals(album.getUser().getId())) {
+            throw new AppException(
+                    HttpStatus.FORBIDDEN,
+                    "ALBUM_403",
+                    "You are not allowed to update this album"
+            );
+        }
+
+        album.setName(request.getName());
+        album.setDescription(request.getDescription());
+
+        if (file != null && !file.isEmpty()) {
+            String fileName = cloudinaryServiceForImage.uploadFile(file);
+            album.setImageUrl(fileName);
+        }
+
+        albumRepository.save(album);
     }
 
     public void updateImageAlbum(MultipartFile file, String albumId) {
@@ -184,8 +213,6 @@ public class AlbumService {
                 .name(albumEntity.getName())
                 .description(albumEntity.getDescription())
                 .imageUrl(albumEntity.getImageUrl())
-                .albumImageUrl(albumEntity.getImageUrl())
-                .nameUser(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown")
                 .username(albumEntity.getUser() != null ? albumEntity.getUser().getName() : "Unknown")
                 .userId(albumEntity.getUser() != null ? albumEntity.getUser().getId() : null)
                 .createdAt(albumEntity.getCreatedAt())

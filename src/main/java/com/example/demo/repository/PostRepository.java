@@ -140,4 +140,19 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
             Pageable pageable);
 
     List<PostEntity> findPostEntitiesByApprovalStatusAndContextTypeId(ApprovalStatus approvalStatus, String contextTypeId);
+    
+    @Query("""
+        SELECT p FROM PostEntity p
+        WHERE p.contextTypeId = :groupId
+        AND p.contextType = :contextType
+        AND p.approvalStatus = :status
+        AND (:query IS NULL OR LOWER(p.content) LIKE LOWER(CONCAT('%', :query, '%')))
+        ORDER BY p.createdAt DESC
+    """)
+    Page<PostEntity> findPendingPostsByGroupSearch(
+            @Param("groupId") String groupId,
+            @Param("contextType") com.example.demo.model.enum_object.ContextType contextType,
+            @Param("status") ApprovalStatus status,
+            @Param("query") String query,
+            Pageable pageable);
 }

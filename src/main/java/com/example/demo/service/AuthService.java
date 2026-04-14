@@ -185,10 +185,16 @@ public class AuthService {
             String roles = user.getRoles().stream()
                     .map(RoleEntity::getName)
                     .collect(Collectors.joining(","));
-            String encodedName = name != null ? URLEncoder.encode(name, StandardCharsets.UTF_8) : "";
+
+            String finalName = user.getName() != null ? user.getName() : "";
+            String finalImageUrl = user.getImageUrl() != null ? user.getImageUrl() : "";
+
+            String encodedName = URLEncoder.encode(finalName, StandardCharsets.UTF_8);
+            String encodedImageUrl = URLEncoder.encode(finalImageUrl, StandardCharsets.UTF_8);
+
             return String.format(
                     "%s/oauth2/redirect?token=%s&refreshToken=%s&roles=%s&email=%s&name=%s&imageUrl=%s",
-                    frontendUrl, token, refreshToken, roles, email, encodedName, picture
+                    frontendUrl, token, refreshToken, roles, email, encodedName, encodedImageUrl
             );
 
         } catch (Exception e) {

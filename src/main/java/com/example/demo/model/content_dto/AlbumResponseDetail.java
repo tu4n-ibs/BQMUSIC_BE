@@ -11,11 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AlbumResponseDetail {
-    private String albumImageUrl;
     private String name;
     private String imageUrl;
     private String description;
-    private String nameUser;
     private String username;
     private String userId;
     private java.time.LocalDateTime createdAt;

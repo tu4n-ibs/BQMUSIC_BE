@@ -10,6 +10,9 @@ import com.example.demo.service.content_service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -141,12 +144,14 @@ public class GroupController {
     """
     )
     @GetMapping("/{groupId}/join-requests/pending")
-    public ApiResponse<List<GroupJoinRequestResponse>> getPendingJoinRequests(
-            @PathVariable String groupId
+    public ApiResponse<Page<GroupJoinRequestResponse>> getPendingJoinRequests(
+            @PathVariable String groupId,
+            @RequestParam(required = false) String query,
+            @ParameterObject Pageable pageable
     ) {
         String currentUserId = SecurityUtils.getCurrentUserId();
-        List<GroupJoinRequestResponse> responses =
-                groupService.getPendingRequests(groupId, currentUserId);
+        Page<GroupJoinRequestResponse> responses =
+                groupService.getPendingRequests(groupId, query, pageable, currentUserId);
 
         return ApiResponse.success(responses);
     }
