@@ -87,17 +87,19 @@ public class PlaylistService {
         playlistSongRepository.save(playlistSong);
     }
     public List<SongPlayListResponse> songPlayListResponse(String playListId) {
-        // 1. Tìm tất cả các bản ghi trong bảng trung gian playlist_song theo playListId
         List<PlayListSongEntity> playlistSongs = playlistSongRepository.findByPlayListEntity_Id(playListId);
 
-        // 2. Lấy số lượng bài hát trong playlist để điền vào field songCount (nếu cần)
-        long songCount = playlistSongs.size();
+        // Chỉ giữ lại những song có isActive = true
+        List<PlayListSongEntity> activeSongs = playlistSongs.stream()
+                .filter(ps -> Boolean.TRUE.equals(ps.getSongEntity().getIsActive()))
+                .toList();
 
-        // 3. Map dữ liệu sang SongPlayListResponse
-        return playlistSongs.stream().map(ps -> {
+        long songCount = activeSongs.size();
+
+        return activeSongs.stream().map(ps -> {
             SongEntity song = ps.getSongEntity();
             PlayListEntity playlist = ps.getPlayListEntity();
-            UserEntity artist = song.getUser(); // Giả định UserEntity ở đây là nghệ sĩ sáng tác
+            UserEntity artist = song.getUser();
 
             return SongPlayListResponse.builder()
                     .songId(song.getId())
@@ -105,8 +107,6 @@ public class PlaylistService {
                     .songImage(song.getImageUrl())
                     .songArtistId(artist != null ? artist.getId() : null)
                     .songArtistName(artist != null ? artist.getName() : "Unknown Artist")
-                    // Nếu SongEntity không có field Album trực tiếp,
-                    // bạn có thể để null hoặc lấy từ GroupEntity nếu Group là Album
                     .songAlbum(song.getGroup() != null ? song.getGroup().getId() : null)
                     .albumName(song.getGroup() != null ? song.getGroup().getName() : "Single")
                     .songCount(songCount)

@@ -193,7 +193,7 @@ public class NewsfeedService {
     private Map<String, SongEntity> batchLoadSongs(List<PostEntity> posts) {
         List<String> ids = extractTargetIds(posts, TargetType.SONG);
         if (ids.isEmpty()) return Collections.emptyMap();
-        return songRepository.findAllById(ids).stream()
+        return songRepository.findAllByIdInAndIsActive(ids,true).stream()
                 .collect(Collectors.toMap(SongEntity::getId, s -> s));
     }
 

@@ -2,19 +2,14 @@ package com.example.demo.service.content_service;
 
 import com.example.demo.common.AppException;
 import com.example.demo.common.SecurityUtils;
-import com.example.demo.entity.GenreEntity;
-import com.example.demo.entity.PlayHistoryEntity;
-import com.example.demo.entity.SongEntity;
-import com.example.demo.entity.UserEntity;
+import com.example.demo.entity.*;
 import com.example.demo.model.content_dto.CreateSongRequest;
 import com.example.demo.model.content_dto.SongResponse;
 import com.example.demo.model.content_dto.TopSongResponse;
 import com.example.demo.model.enum_object.ChartPeriod;
+import com.example.demo.model.enum_object.GroupRole;
 import com.example.demo.model.enum_object.Status;
-import com.example.demo.repository.GenreRepository;
-import com.example.demo.repository.PlayHistoryRepository;
-import com.example.demo.repository.SongRepository;
-import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.*;
 import com.example.demo.service.CloudinaryServiceForImage;
 import com.example.demo.service.CloudinaryServiceForMusic;
 import com.example.demo.specification.SongSpecification;
@@ -43,6 +38,7 @@ public class SongService {
     private final CloudinaryServiceForImage cloudinaryServiceForImage;
     private final UserRepository userRepository;
     private final GenreRepository genreRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final PlayHistoryRepository playHistoryRepository;
 
     public void updateImage(MultipartFile file, String SongId) {
@@ -188,7 +184,7 @@ public class SongService {
             long       cnt    = ((Number) rowIdAndCount(rows.get(i))[1]).longValue();
             SongEntity song   = songMap.get(songId);
 
-            if (song == null) continue;
+            if (song == null || !Boolean.TRUE.equals(song.getIsActive())) continue;
 
             result.add(TopSongResponse.builder()
                     .rank(baseRank + i + 1)
@@ -209,4 +205,31 @@ public class SongService {
     }
 
     private Object[] rowIdAndCount(Object[] row) { return row; }
+
+    public void deleteSong(String songId, String userId) {
+        SongEntity song = songRepository.findById(songId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "SONG_001", "Cannot find song"));
+
+        UserEntity userEntity = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "USER_001", "Cannot find user"));
+
+        boolean isOwner = song.getUser() != null && song.getUser().getId().equals(userId);
+
+        boolean isSiteAdmin = userEntity.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("ADMIN"));
+
+        boolean isGroupAdmin = false;
+        if (song.getGroup() != null) {
+            isGroupAdmin = groupMemberRepository
+                    .findByGroupEntity_IdAndUserEntity_Id(song.getGroup().getId(), userId)
+                    .map(member -> member.getGroupRole() == GroupRole.ADMIN)
+                    .orElse(false);
+        }
+
+        if (!isOwner && !isSiteAdmin && !isGroupAdmin) {
+            throw new AppException(HttpStatus.FORBIDDEN, "SONG_002", "You do not have permission to delete this song");
+        }
+        song.setIsActive(false);
+        songRepository.save(song);
+    }
 }

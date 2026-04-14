@@ -9,7 +9,10 @@ import com.example.demo.repository.PlayHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,12 @@ public class PlayHistoryService {
         Slice<PlayHistoryEntity> historySlice = playHistoryRepository
                 .findByUserIdOrderByPlayedAtDesc(userId, pageable);
 
-        return historySlice.map(this::toSongInHistoryDto);
+        List<SongInHistoryDto> result = historySlice.getContent().stream()
+                .filter(history -> Boolean.TRUE.equals(history.getSong().getIsActive()))
+                .map(this::toSongInHistoryDto)
+                .toList();
+
+        return new SliceImpl<>(result, pageable, historySlice.hasNext());
     }
 
     private SongInHistoryDto toSongInHistoryDto(PlayHistoryEntity history) {

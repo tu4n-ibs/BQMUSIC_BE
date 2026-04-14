@@ -62,4 +62,10 @@ public class SongController {
         Slice<TopSongResponse> topSongs = songService.getTopSongs(period, genreId, pageable);
         return ApiResponse.success(topSongs);
     }
+    @DeleteMapping("/delete")
+    public ApiResponse<Void> deleteSong(@RequestParam String songId) {
+        String userId = SecurityUtils.getCurrentUserId();
+        songService.deleteSong(songId, userId);
+        return ApiResponse.success(null,"Success");
+    }
 }

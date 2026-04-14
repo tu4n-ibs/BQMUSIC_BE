@@ -357,10 +357,12 @@ public class PostService {
 
             // Target: SONG
             if (TargetType.SONG.equals(contentPost.getTargetType()) && contentPost.getTargetId() != null) {
-                songRepository.findById(contentPost.getTargetId()).ifPresent(song -> builder.idSong(song.getId())
-                        .imageUrlSong(song.getImageUrl())
-                        .nameSong(song.getName())
-                        .playCount(song.getPlayCount()));
+                songRepository.findById(contentPost.getTargetId())
+                        .filter(song -> Boolean.TRUE.equals(song.getIsActive()))  // chỉ hiện song active
+                        .ifPresent(song -> builder.idSong(song.getId())
+                                .imageUrlSong(song.getImageUrl())
+                                .nameSong(song.getName())
+                                .playCount(song.getPlayCount()));
             }
 
             // Target: ALBUM
