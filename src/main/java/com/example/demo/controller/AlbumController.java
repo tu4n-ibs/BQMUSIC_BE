@@ -24,6 +24,12 @@ public class AlbumController {
         return ApiResponse.success(null);
     }
 
+    @PutMapping("/{albumId}")
+    public ApiResponse<?> updateAlbum(@PathVariable String albumId, @ModelAttribute AlbumCreateRequest albumCreateRequest) {
+        albumService.update(albumId, albumCreateRequest);
+        return ApiResponse.success(null);
+    }
+
     @GetMapping
     public ApiResponse<List<AlbumListResponse>> getAlbums() {
         return ApiResponse.success(albumService.findAll());

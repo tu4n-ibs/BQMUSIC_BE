@@ -150,10 +150,10 @@ public class PostService {
                 .build();
 
         postRepository.save(sharePost);
-        if (approvalStatus == ApprovalStatus.APPROVED) {
-            notificationService.send(user, rootPost.getUserEntity(),
-                    ActionType.SHARE, TargetNotiType.POST, rootPost.getId());
-        }
+
+        // Gửi thông báo cho chủ bài viết gốc ngay lập tức
+        notificationService.send(user, rootPost.getUserEntity(),
+                ActionType.SHARE, TargetNotiType.POST, rootPost.getId());
     }
 
     public PostDetailResponse getPostDetail(String postId) {

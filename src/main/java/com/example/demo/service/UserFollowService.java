@@ -10,6 +10,8 @@ import com.example.demo.repository.PostRepository;
 import com.example.demo.repository.UserFollowRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.model.enum_object.ApprovalStatus;
+import com.example.demo.model.enum_object.ActionType;
+import com.example.demo.model.enum_object.TargetNotiType;
 import com.example.demo.service.content_service.NewsfeedService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class UserFollowService {
     private final UserFollowRepository userFollowRepository;
     private final PostRepository postRepository;
     private final NewsfeedService newsfeedService;
+    private final NotificationService notificationService;
 
     @Transactional
     public void followUser(String followerId, String followingId) {
@@ -51,6 +54,9 @@ public class UserFollowService {
 
         userFollowRepository.save(userFollow);
         newsfeedService.invalidateNewsfeedCache(followerId);
+
+        // Gửi thông báo cho người được follow
+        notificationService.send(follower, following, ActionType.FOLLOW, TargetNotiType.USER, followerId);
     }
 
     @Transactional

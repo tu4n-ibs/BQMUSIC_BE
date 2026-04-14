@@ -16,10 +16,8 @@ public class AlbumListResponse {
     private String name;
     private String description;
     private String imageUrl;
-    private String albumImageUrl;
     private Long songCount;
     private String userId;
     private String username;
-    private String nameUser;
     private LocalDateTime createdAt;
 }
