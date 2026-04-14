@@ -129,9 +129,10 @@ Lấy toàn bộ bài viết đã được duyệt (`APPROVED`) trong một nhó
     )
     public ApiResponse<Page<PostResponsePage>> getPendingPostsByGroup(
             @PathVariable String groupId,
+            @RequestParam(required = false) String query,
             @ParameterObject Pageable pageable
     ) {
-        return ApiResponse.success(postService.getPendingPostsByGroup(groupId, pageable));
+        return ApiResponse.success(postService.getPendingPostsByGroup(groupId, query, pageable));
     }
 
     @PostMapping("post/{postId}/review")

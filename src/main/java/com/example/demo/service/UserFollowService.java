@@ -15,6 +15,8 @@ import com.example.demo.model.enum_object.TargetNotiType;
 import com.example.demo.service.content_service.NewsfeedService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -60,24 +62,23 @@ public class UserFollowService {
     }
 
     @Transactional
-    public List<UserDTO> checkUserFollowing() {
-        String followerId = SecurityUtils.getCurrentUserId();
-        List<UserFollowEntity> list = userFollowRepository
-                .findUserFollowEntitiesByFollower_Id(followerId);
+    public Page<UserDTO> getFollowing(String userId, String query, Pageable pageable) {
+        if (query == null) query = "";
+        
+        Page<UserFollowEntity> page = userFollowRepository
+                .findFollowingByUserName(userId, query, pageable);
 
-        return list.stream()
-                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollowing()))
-                .toList();
+        return page.map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollowing()));
     }
-    @Transactional
-    public List<UserDTO> checkUserFollower() {
-        String followingId = SecurityUtils.getCurrentUserId();
-        List<UserFollowEntity> list = userFollowRepository
-                .findUserFollowEntitiesByFollowing_Id((followingId));
 
-        return list.stream()
-                .map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollower()))
-                .toList();
+    @Transactional
+    public Page<UserDTO> getFollowers(String userId, String query, Pageable pageable) {
+        if (query == null) query = "";
+
+        Page<UserFollowEntity> page = userFollowRepository
+                .findFollowersByUserName(userId, query, pageable);
+
+        return page.map(userFollowEntity -> UserDTO.fromEntity(userFollowEntity.getFollower()));
     }
 
     @Transactional

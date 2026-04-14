@@ -7,6 +7,9 @@ import com.example.demo.model.content_dto.UserProfileStatsResponse;
 import com.example.demo.service.UserFollowService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -75,21 +78,27 @@ public class UserFollowController {
         return ApiResponse.success(stats);
     }
 
-    @GetMapping("/following")
+    @GetMapping("/{userId}/following")
     @Operation(
-            summary = "Danh sách người tôi đang theo dõi",
-            description = "Trả về danh sách người dùng mà tài khoản hiện tại đang theo dõi."
+            summary = "Danh sách người một user đang theo dõi",
+            description = "Trả về danh sách người dùng mà userId đang theo dõi hỗ trợ tìm kiếm và phân trang."
     )
-    public ApiResponse<List<UserDTO>> getFollowing() {
-        return ApiResponse.success(userFollowService.checkUserFollowing());
+    public ApiResponse<Page<UserDTO>> getFollowing(
+            @PathVariable String userId,
+            @RequestParam(required = false) String query,
+            @ParameterObject Pageable pageable) {
+        return ApiResponse.success(userFollowService.getFollowing(userId, query, pageable));
     }
 
-    @GetMapping("/followers")
+    @GetMapping("/{userId}/followers")
     @Operation(
-            summary = "Danh sách người đang theo dõi tôi",
-            description = "Trả về danh sách người dùng đang theo dõi tài khoản hiện tại."
+            summary = "Danh sách người đang theo dõi một user",
+            description = "Trả về danh sách người dùng đang theo dõi userId hỗ trợ tìm kiếm và phân trang."
     )
-    public ApiResponse<List<UserDTO>> getFollowers() {
-        return ApiResponse.success(userFollowService.checkUserFollower());
+    public ApiResponse<Page<UserDTO>> getFollowers(
+            @PathVariable String userId,
+            @RequestParam(required = false) String query,
+            @ParameterObject Pageable pageable) {
+        return ApiResponse.success(userFollowService.getFollowers(userId, query, pageable));
     }
 }

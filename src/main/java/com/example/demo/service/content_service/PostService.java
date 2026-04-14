@@ -453,7 +453,7 @@ public class PostService {
         });
     }
 
-    public Page<PostResponsePage> getPendingPostsByGroup(String groupId, Pageable pageable) {
+    public Page<PostResponsePage> getPendingPostsByGroup(String groupId, String query, Pageable pageable) {
         String currentUserId = SecurityUtils.getCurrentUserId();
         GroupEntity group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "GROUP_NF_001", "Group not found"));
@@ -466,10 +466,13 @@ public class PostService {
             throw new AppException(HttpStatus.FORBIDDEN, "GROUP_FB_002", "Only admins can view pending posts");
         }
 
-        Page<PostEntity> posts = postRepository.findAllByContextTypeIdAndContextTypeAndApprovalStatusOrderByCreatedAtDesc(
+        if (query == null) query = "";
+
+        Page<PostEntity> posts = postRepository.findPendingPostsByGroupSearch(
                 groupId,
                 ContextType.GROUP,
                 ApprovalStatus.PENDING,
+                query,
                 pageable
         );
 
