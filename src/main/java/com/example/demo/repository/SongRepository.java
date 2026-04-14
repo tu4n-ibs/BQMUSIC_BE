@@ -24,4 +24,6 @@ public interface SongRepository extends JpaRepository<SongEntity, String> , JpaS
     int incrementPlayCount(@Param("songId") String songId);
 
     List<SongEntity> findAllByIdInAndIsActive(Collection<String> ids, Boolean isActive);
+
+    org.springframework.data.domain.Page<SongEntity> findAllByIsActiveTrueAndStatus(com.example.demo.model.enum_object.Status status, org.springframework.data.domain.Pageable pageable);
 }

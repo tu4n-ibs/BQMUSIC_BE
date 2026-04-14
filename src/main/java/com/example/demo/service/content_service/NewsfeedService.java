@@ -296,6 +296,7 @@ public class NewsfeedService {
             SongEntity song = songMap.get(id);
             if (song != null) {
                 res.setIdSong(song.getId()); res.setNameSong(song.getName());
+                res.setSongUserId(song.getUserEntity().getId());
                 res.setImageUrlSong(song.getImageUrl());
                 res.setPlayCount(song.getPlayCount());
             }

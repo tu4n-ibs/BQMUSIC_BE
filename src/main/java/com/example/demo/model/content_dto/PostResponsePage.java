@@ -25,6 +25,7 @@ public class PostResponsePage {
     private Long commentCount;
     private String postDate;
     private String idSong;
+    private String songUserId;
     private String imageUrlSong;
     private String nameSong;
     private Integer playCount;

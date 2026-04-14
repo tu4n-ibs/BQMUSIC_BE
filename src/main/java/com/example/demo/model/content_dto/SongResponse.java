@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class SongResponse {
     private String id;
+    private String userId;
     private String name;
     private String artistName;
     private String genreName;
@@ -14,4 +15,5 @@ public class SongResponse {
     private String imageUrl;
     private Integer duration;
     private Integer playCount;
+    private com.example.demo.model.enum_object.Status status;
 }

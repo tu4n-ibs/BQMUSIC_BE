@@ -19,11 +19,20 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
     @Query("SELECT COUNT(p) FROM PostEntity p WHERE p.userEntity.id = :userId AND p.contextType = 'PROFILE' AND p.postType = 'OWNER' AND p.approvalStatus = :status AND p.targetType = com.example.demo.model.enum_object.TargetType.ALBUM")
     long countAlbumsByUserId(@Param("userId") String userId, @Param("status") com.example.demo.model.enum_object.ApprovalStatus status);
 
-    @Query("SELECT COUNT(p) FROM PostEntity p WHERE p.userEntity.id = :userId AND p.contextType = 'PROFILE' AND p.approvalStatus = :status AND (p.postType = 'SHARE' OR p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.ALBUM)")
+    @Query("""
+        SELECT COUNT(p) FROM PostEntity p 
+        LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
+        WHERE p.userEntity.id = :userId 
+        AND p.contextType = 'PROFILE' 
+        AND p.approvalStatus = :status 
+        AND (p.postType = 'SHARE' OR p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.ALBUM)
+        AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
+    """)
     long countRegularPostsByUserId(@Param("userId") String userId, @Param("status") com.example.demo.model.enum_object.ApprovalStatus status);
 
     @Query("""
     SELECT p FROM PostEntity p
+    LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
     WHERE p.userEntity.id = :userId
       AND p.contextType = :contextType
       AND (:postType IS NULL OR p.postType = :postType)
@@ -32,6 +41,7 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
           p.visibility != :privateVisibility
           OR p.userEntity.id = :currentUserId
       )
+      AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
     ORDER BY p.createdAt DESC
 """)
     Page<PostEntity> findPostsByUserId(
@@ -46,9 +56,11 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
 
     @Query("""
     SELECT p FROM PostEntity p
+    LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
     WHERE p.userEntity.id = :userId
       AND p.contextType = com.example.demo.model.enum_object.ContextType.PROFILE
       AND (:postType IS NULL OR p.postType = :postType)
+      AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
     ORDER BY p.createdAt DESC
 """)
     Page<PostEntity> findPostsByUserIdForOwner(
@@ -57,8 +69,20 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
             Pageable pageable
     );
 
+    @Query("""
+        SELECT p FROM PostEntity p
+        LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
+        WHERE p.contextTypeId = :contextTypeId
+        AND p.contextType = :contextType
+        AND p.approvalStatus = :approvalStatus
+        AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
+        ORDER BY p.createdAt DESC
+    """)
     Page<PostEntity> findAllByContextTypeIdAndContextTypeAndApprovalStatusOrderByCreatedAtDesc(
-            String contextTypeId, ContextType contextType, ApprovalStatus approvalStatus, Pageable pageable);
+            @Param("contextTypeId") String contextTypeId, 
+            @Param("contextType") ContextType contextType, 
+            @Param("approvalStatus") ApprovalStatus approvalStatus, 
+            Pageable pageable);
 
     @Query("""
        SELECT uf.following.id
@@ -72,9 +96,11 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
         JOIN FETCH p.userEntity u
         LEFT JOIN FETCH p.originalPost op
         LEFT JOIN FETCH op.userEntity opu
+        LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
         WHERE p.userEntity.id IN :followingIds
         AND p.visibility IN :visibilities
         AND p.approvalStatus = :approvalStatus
+        AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
         ORDER BY p.createdAt DESC
     """)
     List<PostEntity> findPostsByFollowings(
@@ -89,10 +115,12 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
         JOIN FETCH p.userEntity u
         LEFT JOIN FETCH p.originalPost op
         LEFT JOIN FETCH op.userEntity opu
+        LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
         WHERE p.contextType = :contextType
         AND p.contextTypeId IN :groupIds
         AND p.approvalStatus = :approvalStatus
         AND p.visibility = :visibility
+        AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
         ORDER BY p.createdAt DESC
     """)
     List<PostEntity> findPostsByGroups(
@@ -113,6 +141,7 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
         AND s.genre.id IN :genreIds
         AND p.visibility = :visibility
         AND p.approvalStatus = :approvalStatus
+        AND s.isActive = true
         ORDER BY p.createdAt DESC
     """)
     List<PostEntity> findPostsByGenres(
@@ -127,8 +156,10 @@ public interface PostRepository extends JpaRepository<PostEntity,String> {
     SELECT p FROM PostEntity p
     LEFT JOIN LikeEntity l ON l.post.id = p.id
     LEFT JOIN CommentEntity c ON c.post.id = p.id
+    LEFT JOIN SongEntity s ON (p.targetType = com.example.demo.model.enum_object.TargetType.SONG AND s.id = p.targetId)
     WHERE p.visibility = :visibility
       AND p.approvalStatus = :approvalStatus
+      AND (p.targetType IS NULL OR p.targetType <> com.example.demo.model.enum_object.TargetType.SONG OR s.isActive = true)
     GROUP BY p.id
     ORDER BY p.createdAt DESC,
              COUNT(DISTINCT l.id) DESC,

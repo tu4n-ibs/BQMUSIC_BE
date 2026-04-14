@@ -68,4 +68,11 @@ public class SongController {
         songService.deleteSong(songId, userId);
         return ApiResponse.success(null,"Success");
     }
+
+    @GetMapping("/admin/list")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Page<SongResponse>> getAdminSongs(@ParameterObject Pageable pageable) {
+        Page<SongResponse> result = songService.getAllPublishedSongs(pageable);
+        return ApiResponse.success(result, "Success");
+    }
 }

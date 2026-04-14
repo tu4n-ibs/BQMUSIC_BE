@@ -94,12 +94,14 @@ public class SongService {
     private SongResponse convertToResponse(SongEntity song) {
         return SongResponse.builder()
                 .id(song.getId())
+                .userId(song.getUserEntity().getId())
                 .name(song.getName())
                 .artistName(song.getUser() != null ? song.getUser().getName() : null)
                 .genreName(song.getGenre() != null ? song.getGenre().getName() : null)
                 .imageUrl(song.getImageUrl())
                 .duration(song.getDuration())
                 .playCount(song.getPlayCount())
+                .status(song.getStatus())
                 .build();
     }
 
@@ -206,6 +208,7 @@ public class SongService {
 
     private Object[] rowIdAndCount(Object[] row) { return row; }
 
+    @Transactional
     public void deleteSong(String songId, String userId) {
         SongEntity song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "SONG_001", "Cannot find song"));
@@ -231,5 +234,10 @@ public class SongService {
         }
         song.setIsActive(false);
         songRepository.save(song);
+    }
+
+    public Page<SongResponse> getAllPublishedSongs(Pageable pageable) {
+        return songRepository.findAllByIsActiveTrueAndStatus(Status.PUBLISHED, pageable)
+                .map(this::convertToResponse);
     }
 }
