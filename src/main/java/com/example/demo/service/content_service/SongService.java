@@ -78,6 +78,7 @@ public class SongService {
             int duration = extractDuration(musicFile);
             song.setPlayCount(0);
             song.setDuration(duration);
+            song.setIsActive(true);
 
             SongEntity savedSong = songRepository.save(song);
             return convertToResponse(savedSong);
