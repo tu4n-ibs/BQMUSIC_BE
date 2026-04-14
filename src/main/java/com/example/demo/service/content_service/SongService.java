@@ -94,7 +94,7 @@ public class SongService {
     private SongResponse convertToResponse(SongEntity song) {
         return SongResponse.builder()
                 .id(song.getId())
-                .userId(song.getUserEntity().getId())
+                .userId(song.getUser().getId())
                 .name(song.getName())
                 .artistName(song.getUser() != null ? song.getUser().getName() : null)
                 .genreName(song.getGenre() != null ? song.getGenre().getName() : null)
